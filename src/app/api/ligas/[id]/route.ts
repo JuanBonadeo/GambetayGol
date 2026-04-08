@@ -8,7 +8,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   try {
     const data = await prisma.liga.findUnique({
       where: { id: params.id },
-      include: { pais: true }
+      include: { pais: true, clubes: true }
     });
     if (!data) return NextResponse.json({ error: "Not Found" }, { status: 404 });
     return NextResponse.json({ data });
@@ -21,7 +21,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   try {
     const body = await req.json();
     const parsed = LigaSchema.safeParse(body);
-    
+
     if (!parsed.success) {
       return NextResponse.json({ error: "Validation Error", details: parsed.error.format() }, { status: 400 });
     }
@@ -29,7 +29,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     const data = await prisma.liga.update({
       where: { id: params.id },
       data: parsed.data,
-      include: { pais: true }
+      include: { pais: true, clubes: true }
     });
 
     return NextResponse.json({ data });

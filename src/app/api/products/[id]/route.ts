@@ -21,13 +21,13 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   try {
     const body = await req.json();
     const parsed = ProductSchema.safeParse(body);
-    
+
     if (!parsed.success) {
       return NextResponse.json({ error: "Validation Error", details: parsed.error.format() }, { status: 400 });
     }
 
     const { variants, images, ...productData } = parsed.data;
-    
+
     if (variants || images) {
       await prisma.$transaction(async (tx) => {
         if (variants) {

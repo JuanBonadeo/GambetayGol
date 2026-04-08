@@ -21,7 +21,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   try {
     const body = await req.json();
     const parsed = OfferSchema.safeParse(body);
-    
+
     if (!parsed.success) {
       return NextResponse.json({ error: "Validation Error", details: parsed.error.format() }, { status: 400 });
     }
