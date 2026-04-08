@@ -1,34 +1,26 @@
 import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+import { auth } from '../src/lib/auth'
 
 const prisma = new PrismaClient()
 
 async function main() {
   console.log('Seeding data...')
 
-  // 1. Create Admin User using Better Auth Account convention (provider="credential")
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@gambetaygol.com'
-  const adminPassword = process.env.ADMIN_PASSWORD || 'supersecret123'
-  const passwordHash = await bcrypt.hash(adminPassword, 10)
+  const adminPassword = process.env.ADMIN_PASSWORD || 'supersecretpassword123!'
 
-  const user = await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: {},
-    create: {
+  await prisma.user.deleteMany({ where: { email: adminEmail } })
+
+  const result = await auth.api.signUpEmail({
+    body: {
       name: 'Admin',
       email: adminEmail,
-      emailVerified: true,
-      accounts: {
-        create: {
-          accountId: adminEmail,
-          providerId: 'credential',
-          password: passwordHash
-        }
-      }
-    }
+      password: adminPassword
+    },
+    headers: new Headers()
   })
 
-  console.log(`Admin user created: ${user.email}`)
+  console.log(`Admin user created: ${adminEmail}`)
 
   // 2. Create Países: Argentina, España
   const ar = await prisma.pais.upsert({
