@@ -3,9 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // The route group is (admin), so paths don't include /admin
-  const protectedUIRoutes = ["/dashboard", "/productos", "/ofertas", "/clubes", "/ligas", "/categorias"];
-  const isProtectedPath = protectedUIRoutes.some(p => pathname.startsWith(p));
+  // Admin UI routes are under /admin/
+  const isProtectedPath = pathname.startsWith("/admin");
   
   if (isProtectedPath) {
     const response = await fetch(`${request.nextUrl.origin}/api/auth/get-session`, {

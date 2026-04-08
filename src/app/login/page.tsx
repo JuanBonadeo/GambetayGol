@@ -24,7 +24,7 @@ export default function LoginPage() {
       setError(error.message || "Error al iniciar sesión");
       setLoading(false);
     } else {
-      router.push("/dashboard");
+      router.push("/admin/dashboard");
     }
   };
 
