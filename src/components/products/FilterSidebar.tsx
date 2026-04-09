@@ -2,39 +2,76 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Liga, Categoria } from "@/types";
+import { Liga, Categoria, Club } from "@/types";
+
+const CLUBS_DEFAULT_VISIBLE = 5;
 
 interface FilterSidebarProps {
   ligas: Liga[];
   categorias: Categoria[];
+  clubs: Club[];
   selectedLigas: string[];
   selectedCategorias: string[];
+  selectedClubs: string[];
   ligaSearch: string;
+  clubSearch: string;
   onToggleLiga: (id: string) => void;
   onToggleCategoria: (id: string) => void;
+  onToggleClub: (id: string) => void;
   onLigaSearch: (q: string) => void;
+  onClubSearch: (q: string) => void;
   onClear: () => void;
 }
 
 export default function FilterSidebar({
   ligas,
   categorias,
+  clubs,
   selectedLigas,
   selectedCategorias,
+  selectedClubs,
   ligaSearch,
+  clubSearch,
   onToggleLiga,
   onToggleCategoria,
+  onToggleClub,
   onLigaSearch,
+  onClubSearch,
   onClear,
 }: FilterSidebarProps) {
   const [ligaOpen, setLigaOpen] = useState(true);
+  const [clubOpen, setClubOpen] = useState(true);
   const [catOpen, setCatOpen] = useState(true);
 
-  const hasFilters = selectedLigas.length > 0 || selectedCategorias.length > 0;
+  const hasFilters =
+    selectedLigas.length > 0 ||
+    selectedCategorias.length > 0 ||
+    selectedClubs.length > 0;
 
   const filteredLigas = ligas.filter((l) =>
     l.nombre.toLowerCase().includes(ligaSearch.toLowerCase())
   );
+
+  // Clubs to show depends on whether a liga is selected
+  const ligaFilteredClubs =
+    selectedLigas.length > 0
+      ? clubs.filter((c) => selectedLigas.includes(c.ligaId))
+      : clubs;
+
+  const searchedClubs = ligaFilteredClubs.filter((c) =>
+    c.nombre.toLowerCase().includes(clubSearch.toLowerCase())
+  );
+
+  // When no liga selected, only show first N unless searching
+  const visibleClubs =
+    selectedLigas.length > 0 || clubSearch.length > 0
+      ? searchedClubs
+      : searchedClubs.slice(0, CLUBS_DEFAULT_VISIBLE);
+
+  const hasMoreClubs =
+    selectedLigas.length === 0 &&
+    clubSearch.length === 0 &&
+    ligaFilteredClubs.length > CLUBS_DEFAULT_VISIBLE;
 
   return (
     <aside className="w-full md:w-64 flex-none">
@@ -74,7 +111,6 @@ export default function FilterSidebar({
               transition={{ duration: 0.25, ease: "easeInOut" }}
               className="overflow-hidden"
             >
-              {/* Search */}
               <div className="relative mb-3">
                 <input
                   type="text"
@@ -86,7 +122,6 @@ export default function FilterSidebar({
                 <FilterIcon className="absolute right-3 top-1/2 -translate-y-1/2 text-[#919191]" />
               </div>
 
-              {/* Lista */}
               <div className="max-h-60 overflow-y-auto space-y-1 scrollbar-hide">
                 {filteredLigas.map((liga) => {
                   const active = selectedLigas.includes(liga.id);
@@ -110,6 +145,87 @@ export default function FilterSidebar({
                   );
                 })}
                 {filteredLigas.length === 0 && (
+                  <p className="text-[10px] text-[#919191] px-3 py-2 uppercase tracking-widest">
+                    Sin resultados
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Club section */}
+      <div className="mb-6">
+        <button
+          onClick={() => setClubOpen((v) => !v)}
+          className="flex items-center justify-between w-full mb-3"
+        >
+          <span className="font-black uppercase text-[10px] tracking-widest text-[#c6c6c6]">
+            CLUB
+          </span>
+          <ChevronIcon open={clubOpen} />
+        </button>
+
+        <AnimatePresence initial={false}>
+          {clubOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              {/* Search — siempre visible cuando no hay liga seleccionada */}
+              {selectedLigas.length === 0 && (
+                <div className="relative mb-3">
+                  <input
+                    type="text"
+                    value={clubSearch}
+                    onChange={(e) => onClubSearch(e.target.value)}
+                    placeholder="BUSCAR CLUB"
+                    className="w-full bg-[#353535] text-[#e2e2e2] placeholder:text-[#919191] placeholder:text-[10px] placeholder:tracking-widest placeholder:uppercase px-3 py-2 text-xs outline-none border-b-2 border-transparent focus:border-[#34b5fa] transition-colors duration-200"
+                  />
+                  <FilterIcon className="absolute right-3 top-1/2 -translate-y-1/2 text-[#919191]" />
+                </div>
+              )}
+
+              {selectedLigas.length > 0 && (
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#474747] px-1 mb-2">
+                  CLUBES DE LA LIGA SELECCIONADA
+                </p>
+              )}
+
+              <div className="max-h-60 overflow-y-auto space-y-1 scrollbar-hide">
+                {visibleClubs.map((club) => {
+                  const active = selectedClubs.includes(club.id);
+                  return (
+                    <button
+                      key={club.id}
+                      onClick={() => onToggleClub(club.id)}
+                      className={`flex items-center gap-3 w-full px-3 py-2 text-[10px] font-black uppercase tracking-wider transition-colors duration-200 text-left ${
+                        active
+                          ? "bg-[#34b5fa] text-[#001e2f]"
+                          : "bg-[#2a2a2a] text-[#c6c6c6] hover:bg-[#353535] hover:text-white"
+                      }`}
+                    >
+                      <span
+                        className={`w-3 h-3 flex-none border ${
+                          active ? "bg-[#001e2f] border-[#001e2f]" : "border-[#919191]"
+                        }`}
+                      />
+                      {club.nombre}
+                    </button>
+                  );
+                })}
+
+                {hasMoreClubs && (
+                  <p className="text-[10px] text-[#474747] px-3 py-2 uppercase tracking-widest">
+                    +{ligaFilteredClubs.length - CLUBS_DEFAULT_VISIBLE} más — buscá por nombre
+                  </p>
+                )}
+
+                {visibleClubs.length === 0 && (
                   <p className="text-[10px] text-[#919191] px-3 py-2 uppercase tracking-widest">
                     Sin resultados
                   </p>

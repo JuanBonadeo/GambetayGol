@@ -1,30 +1,41 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Categoria, Liga } from "@/types";
+import { Categoria, Liga, Club } from "@/types";
 
 interface FilterChipsProps {
   selectedLigas: string[];
   selectedCategorias: string[];
+  selectedClubs: string[];
   ligas: Liga[];
   categorias: Categoria[];
+  clubs: Club[];
   onRemoveLiga: (id: string) => void;
   onRemoveCategoria: (id: string) => void;
+  onRemoveClub: (id: string) => void;
 }
 
 export default function FilterChips({
   selectedLigas,
   selectedCategorias,
+  selectedClubs,
   ligas,
   categorias,
+  clubs,
   onRemoveLiga,
   onRemoveCategoria,
+  onRemoveClub,
 }: FilterChipsProps) {
-  const hasAny = selectedLigas.length > 0 || selectedCategorias.length > 0;
+  const hasAny =
+    selectedLigas.length > 0 ||
+    selectedCategorias.length > 0 ||
+    selectedClubs.length > 0;
+
   if (!hasAny) return null;
 
   const getLigaNombre = (id: string) => ligas.find((l) => l.id === id)?.nombre ?? id;
   const getCategoriaNombre = (id: string) => categorias.find((c) => c.id === id)?.nombre ?? id;
+  const getClubNombre = (id: string) => clubs.find((c) => c.id === id)?.nombre ?? id;
 
   return (
     <div className="flex flex-wrap gap-2 mt-4">
@@ -40,6 +51,21 @@ export default function FilterChips({
             className="flex items-center gap-2 bg-[#2a2a2a] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#c6c6c6] hover:bg-[#353535] hover:text-white transition-colors duration-200"
           >
             {getLigaNombre(id)}
+            <span className="text-[#34b5fa]">×</span>
+          </motion.button>
+        ))}
+
+        {selectedClubs.map((id) => (
+          <motion.button
+            key={`club-${id}`}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => onRemoveClub(id)}
+            className="flex items-center gap-2 bg-[#2a2a2a] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#c6c6c6] hover:bg-[#353535] hover:text-white transition-colors duration-200"
+          >
+            {getClubNombre(id)}
             <span className="text-[#34b5fa]">×</span>
           </motion.button>
         ))}

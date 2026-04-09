@@ -139,7 +139,7 @@ export default function HeroSection({ products: _ }: HeroSectionProps) {
             variants={itemVariants}
             className="text-[10px] font-black uppercase tracking-widest text-[#34b5fa] mb-6"
           >
-            COLECCIÓN 2025 — CAMISETAS RETRO
+            COLECCIÓN SCALONETA — SELECCIÓN ARGENTINA
           </motion.p>
 
           <motion.h1
@@ -158,18 +158,18 @@ export default function HeroSection({ products: _ }: HeroSectionProps) {
             variants={itemVariants}
             className="text-xs font-bold uppercase tracking-widest text-[#c6c6c6] max-w-sm mb-10"
           >
-            La mística del fútbol retro.
+            Las camisetas de los campeones del mundo.
             <br />
-            La camiseta que lo cuenta todo.
+            Vestite con la Scaloneta.
           </motion.p>
 
           <motion.div variants={itemVariants}>
             <Magnet strength={0.25}>
               <Link
-                href="/productos"
+                href="/productos?liga=selecciones"
                 className="inline-block bg-white text-[#001e2c] font-black uppercase tracking-widest py-4 px-10 text-sm hover:bg-[#34b5fa] hover:text-[#001e2f] transition-colors duration-300"
               >
-                VER COLECCIÓN
+                VER COLECCION
               </Link>
             </Magnet>
           </motion.div>

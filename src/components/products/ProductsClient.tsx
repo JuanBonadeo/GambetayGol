@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Product, Liga, Categoria } from "@/types";
+import { Product, Liga, Categoria, Club } from "@/types";
 import FilterSidebar from "./FilterSidebar";
 import SortDropdown, { SortOption } from "./SortDropdown";
 import FilterChips from "./FilterChips";
@@ -32,9 +32,24 @@ export default function ProductsClient({
   const [selectedCategorias, setSelectedCategorias] = useState<string[]>(
     initialCategoriaId ? [initialCategoriaId] : []
   );
+  const [selectedClubs, setSelectedClubs] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("recientes");
   const [ligaSearch, setLigaSearch] = useState("");
+  const [clubSearch, setClubSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Derive unique clubs from products
+  const allClubs = useMemo<Club[]>(() => {
+    const seen = new Set<string>();
+    const clubs: Club[] = [];
+    for (const p of products) {
+      if (p.club && !seen.has(p.club.id)) {
+        seen.add(p.club.id);
+        clubs.push(p.club);
+      }
+    }
+    return clubs.sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [products]);
 
   const filteredProducts = useMemo(() => {
     let result = products.filter((p) => p.activo);
@@ -44,6 +59,9 @@ export default function ProductsClient({
     }
     if (selectedCategorias.length > 0) {
       result = result.filter((p) => selectedCategorias.includes(p.categoriaId));
+    }
+    if (selectedClubs.length > 0) {
+      result = result.filter((p) => selectedClubs.includes(p.clubId));
     }
 
     switch (sortBy) {
@@ -64,7 +82,7 @@ export default function ProductsClient({
     }
 
     return result;
-  }, [products, selectedLigas, selectedCategorias, sortBy]);
+  }, [products, selectedLigas, selectedCategorias, selectedClubs, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
   const paginated = filteredProducts.slice(
@@ -78,6 +96,8 @@ export default function ProductsClient({
     setSelectedLigas((prev) =>
       prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id]
     );
+    // Clear club selection when changing liga
+    setSelectedClubs([]);
     resetPage();
   };
 
@@ -88,10 +108,19 @@ export default function ProductsClient({
     resetPage();
   };
 
+  const toggleClub = (id: string) => {
+    setSelectedClubs((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+    );
+    resetPage();
+  };
+
   const clearAll = () => {
     setSelectedLigas([]);
     setSelectedCategorias([]);
+    setSelectedClubs([]);
     setLigaSearch("");
+    setClubSearch("");
     resetPage();
   };
 
@@ -100,12 +129,17 @@ export default function ProductsClient({
       <FilterSidebar
         ligas={ligas}
         categorias={categorias}
+        clubs={allClubs}
         selectedLigas={selectedLigas}
         selectedCategorias={selectedCategorias}
+        selectedClubs={selectedClubs}
         ligaSearch={ligaSearch}
+        clubSearch={clubSearch}
         onToggleLiga={toggleLiga}
         onToggleCategoria={toggleCategoria}
+        onToggleClub={toggleClub}
         onLigaSearch={setLigaSearch}
+        onClubSearch={setClubSearch}
         onClear={clearAll}
       />
 
@@ -121,10 +155,13 @@ export default function ProductsClient({
         <FilterChips
           selectedLigas={selectedLigas}
           selectedCategorias={selectedCategorias}
+          selectedClubs={selectedClubs}
           ligas={ligas}
           categorias={categorias}
+          clubs={allClubs}
           onRemoveLiga={toggleLiga}
           onRemoveCategoria={toggleCategoria}
+          onRemoveClub={toggleClub}
         />
 
         <div className="mt-6">

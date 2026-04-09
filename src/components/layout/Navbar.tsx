@@ -25,7 +25,7 @@ export default function Navbar() {
 
   return (
     <header className="fixed top-0 w-full z-50 bg-[#131313]/70 backdrop-blur-xl">
-      <div className="flex flex-col w-full px-6 py-4 max-w-[1600px] mx-auto md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col w-full px-6 py-1 max-w-[1600px] mx-auto md:flex-row md:items-center md:justify-between">
         {/* Logo + mobile toggle */}
         <div className="flex items-center justify-between">
           <Link href="/" aria-label="Gambeta y Gol — Inicio">
@@ -34,7 +34,7 @@ export default function Navbar() {
               alt="Gambeta y Gol"
               width={140}
               height={40}
-              className="h-10 w-auto object-contain"
+              className="h-20 w-auto object-contain"
               priority
             />
           </Link>
