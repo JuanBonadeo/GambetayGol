@@ -15,12 +15,12 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
   const imageUrl = getPrimaryImage(product);
   const isNew =
     discountPercent === null &&
-    new Date(product.createdAt) > new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+    new Date(product.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   const badge = discountPercent
     ? `${Math.round(discountPercent)}% OFF`
     : isNew
-    ? "NEW DROP"
+    ? "NEW"
     : null;
 
   return (
@@ -38,7 +38,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
               alt={product.nombre}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              className="object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+              className="object-cover  group-hover:grayscale-0 transition-all duration-700"
               priority={priority}
             />
           ) : (

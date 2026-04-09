@@ -25,9 +25,7 @@ export interface Club {
   nombre: string;
   slug: string;
   escudo: string | null;
-  paisId: string;
   ligaId: string;
-  pais: Pais;
   liga: Liga;
   createdAt: string;
   updatedAt: string;

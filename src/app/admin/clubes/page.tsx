@@ -7,20 +7,17 @@ import { FormDrawer } from "@/components/admin/FormDrawer";
 import { useToast } from "@/components/admin/Toast";
 import ImageUploader, { ProductImageEntry } from "@/components/admin/ImageUploader";
 
-interface Pais { id: string; nombre: string; }
-interface Liga { id: string; nombre: string; }
+interface Liga { id: string; nombre: string; pais?: { nombre: string } }
 interface Club {
   id: string;
   nombre: string;
   slug: string;
   escudo: string | null;
-  paisId: string;
   ligaId: string;
-  pais: { nombre: string };
-  liga: { nombre: string };
+  liga: { nombre: string; pais?: { nombre: string } };
 }
 
-const emptyForm = { nombre: "", slug: "", paisId: "", ligaId: "" };
+const emptyForm = { nombre: "", slug: "", ligaId: "" };
 
 function toSlug(str: string) {
   return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -30,7 +27,6 @@ function toSlug(str: string) {
 export default function ClubesPage() {
   const { toast } = useToast();
   const [clubes, setClubes] = useState<Club[]>([]);
-  const [paises, setPaises] = useState<Pais[]>([]);
   const [ligas, setLigas] = useState<Liga[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -45,13 +41,11 @@ export default function ClubesPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [cRes, pRes, lRes] = await Promise.all([
+    const [cRes, lRes] = await Promise.all([
       fetch("/api/clubs"),
-      fetch("/api/paises"),
       fetch("/api/ligas"),
     ]);
     setClubes((await cRes.json()).data || []);
-    setPaises((await pRes.json()).data || []);
     setLigas((await lRes.json()).data || []);
     setLoading(false);
   }, []);
@@ -68,7 +62,7 @@ export default function ClubesPage() {
 
   const openEdit = (c: Club) => {
     setEditingId(c.id);
-    setForm({ nombre: c.nombre, slug: c.slug, paisId: c.paisId, ligaId: c.ligaId });
+    setForm({ nombre: c.nombre, slug: c.slug, ligaId: c.ligaId });
     setEscudoImages(c.escudo ? [{ url: c.escudo, orden: 0, esPrincipal: true }] : []);
     setFormError("");
     setDrawerOpen(true);
@@ -163,8 +157,7 @@ export default function ClubesPage() {
               <th className="px-5 py-3 text-left text-xs text-gray-500 font-medium uppercase tracking-wider w-12">Escudo</th>
               <th className="px-5 py-3 text-left text-xs text-gray-500 font-medium uppercase tracking-wider">Nombre</th>
               <th className="px-5 py-3 text-left text-xs text-gray-500 font-medium uppercase tracking-wider">Liga</th>
-              <th className="px-5 py-3 text-left text-xs text-gray-500 font-medium uppercase tracking-wider">País</th>
-              <th className="px-5 py-3 text-center text-xs text-gray-500 font-medium uppercase tracking-wider w-24">Acciones</th>
+              <th className="w-10"></th>
             </tr>
           </thead>
           <tbody>
@@ -206,7 +199,8 @@ export default function ClubesPage() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className={`border-b border-[#1e1e1e]/50 hover:bg-white/[0.02] transition-colors group ${deletingId === c.id ? "opacity-40" : ""}`}
+                    onClick={() => openEdit(c)}
+                    className={`border-b border-[#1e1e1e]/50 hover:bg-white/[0.03] transition-colors group cursor-pointer ${deletingId === c.id ? "opacity-40" : ""}`}
                   >
                     <td className="px-5 py-3">
                       <div className="w-9 h-9 rounded-full bg-[#1a1a1a] overflow-hidden border border-[#1e1e1e] flex items-center justify-center">
@@ -221,29 +215,17 @@ export default function ClubesPage() {
                     </td>
                     <td className="px-5 py-3 text-white text-xs font-medium">{c.nombre}</td>
                     <td className="px-5 py-3 text-gray-400 text-xs">{c.liga?.nombre}</td>
-                    <td className="px-5 py-3 text-gray-400 text-xs">{c.pais?.nombre}</td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => openEdit(c)}
-                          className="p-1.5 text-gray-500 hover:text-[#38bdf8] hover:bg-[#38bdf8]/10 rounded transition-colors"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(c.id)}
-                          className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                            <path d="M10 11v6" /><path d="M14 11v6" />
-                            <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
-                          </svg>
-                        </button>
-                      </div>
+                    <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleDelete(c.id)}
+                        className="p-1.5 text-gray-700 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                          <path d="M10 11v6" /><path d="M14 11v6" />
+                          <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                        </svg>
+                      </button>
                     </td>
                   </motion.tr>
                 ))}
@@ -286,29 +268,16 @@ export default function ClubesPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>País</label>
-              <select
-                required className={inputCls}
-                value={form.paisId}
-                onChange={(e) => setForm({ ...form, paisId: e.target.value })}
-              >
-                <option value="">Seleccionar...</option>
-                {paises.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>Liga</label>
-              <select
-                required className={inputCls}
-                value={form.ligaId}
-                onChange={(e) => setForm({ ...form, ligaId: e.target.value })}
-              >
-                <option value="">Seleccionar...</option>
-                {ligas.map((l) => <option key={l.id} value={l.id}>{l.nombre}</option>)}
-              </select>
-            </div>
+          <div>
+            <label className={labelCls}>Liga</label>
+            <select
+              required className={inputCls}
+              value={form.ligaId}
+              onChange={(e) => setForm({ ...form, ligaId: e.target.value })}
+            >
+              <option value="">Seleccionar...</option>
+              {ligas.map((l) => <option key={l.id} value={l.id}>{l.nombre}{l.pais ? ` — ${l.pais.nombre}` : ""}</option>)}
+            </select>
           </div>
 
           <div>

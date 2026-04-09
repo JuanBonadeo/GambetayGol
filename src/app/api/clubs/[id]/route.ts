@@ -8,7 +8,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   try {
     const data = await prisma.club.findUnique({
       where: { id: params.id },
-      include: { pais: true, liga: true }
+      include: { liga: { include: { pais: true } } }
     });
     if (!data) return NextResponse.json({ error: "Not Found" }, { status: 404 });
     return NextResponse.json({ data });
@@ -29,7 +29,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     const data = await prisma.club.update({
       where: { id: params.id },
       data: parsed.data,
-      include: { pais: true, liga: true }
+      include: { liga: { include: { pais: true } } }
     });
 
     return NextResponse.json({ data });

@@ -31,10 +31,10 @@ export default async function HomePage() {
   const retroProducts = products.filter((p) => p.categoria === "Retro" && p.activo);
 
   const saProducts = retroProducts.filter((p) =>
-    SA_CODES.has(p.club?.pais?.codigo ?? "")
+    SA_CODES.has(p.club?.liga?.pais?.codigo ?? "")
   );
   const euProducts = retroProducts.filter((p) =>
-    EU_CODES.has(p.club?.pais?.codigo ?? "")
+    EU_CODES.has(p.club?.liga?.pais?.codigo ?? "")
   );
 
   // Fallback: if geographic split yields nothing, split retro in half

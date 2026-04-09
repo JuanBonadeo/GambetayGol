@@ -140,14 +140,13 @@ async function main() {
   ]
 
   const clubes: Record<string, { id: string }> = {}
-  for (const [nombre, slug, paisCodigo, ligaSlug] of clubesData) {
+  for (const [nombre, slug, , ligaSlug] of clubesData) {
     clubes[slug] = await prisma.club.upsert({
       where: { slug },
       update: { nombre },
       create: {
         nombre,
         slug,
-        paisId: paises[paisCodigo].id,
         ligaId: ligas[ligaSlug].id,
       },
     })

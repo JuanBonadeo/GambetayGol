@@ -159,7 +159,7 @@ export default function LigasPage() {
               <th className="px-5 py-3 text-left text-xs text-gray-500 font-medium uppercase tracking-wider">Nombre</th>
               <th className="px-5 py-3 text-left text-xs text-gray-500 font-medium uppercase tracking-wider">País</th>
               <th className="px-5 py-3 text-center text-xs text-gray-500 font-medium uppercase tracking-wider">Clubes</th>
-              <th className="px-5 py-3 text-center text-xs text-gray-500 font-medium uppercase tracking-wider w-24">Acciones</th>
+              <th className="w-10"></th>
             </tr>
           </thead>
           <tbody>
@@ -202,7 +202,8 @@ export default function LigasPage() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className={`border-b border-[#1e1e1e]/50 hover:bg-white/[0.02] transition-colors group ${deletingId === l.id ? "opacity-40" : ""}`}
+                    onClick={() => openEdit(l)}
+                    className={`border-b border-[#1e1e1e]/50 hover:bg-white/[0.03] transition-colors group cursor-pointer ${deletingId === l.id ? "opacity-40" : ""}`}
                   >
                     <td className="px-5 py-3">
                       <div className="w-9 h-9 rounded-md bg-[#1a1a1a] overflow-hidden border border-[#1e1e1e] flex items-center justify-center">
@@ -221,28 +222,17 @@ export default function LigasPage() {
                     <td className="px-5 py-3 text-center">
                       <span className="text-gray-400 text-xs tabular-nums">{l.clubes?.length ?? 0}</span>
                     </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => openEdit(l)}
-                          className="p-1.5 text-gray-500 hover:text-[#38bdf8] hover:bg-[#38bdf8]/10 rounded transition-colors"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(l.id)}
-                          className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                            <path d="M10 11v6" /><path d="M14 11v6" />
-                            <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
-                          </svg>
-                        </button>
-                      </div>
+                    <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleDelete(l.id)}
+                        className="p-1.5 text-gray-700 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                          <path d="M10 11v6" /><path d="M14 11v6" />
+                          <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                        </svg>
+                      </button>
                     </td>
                   </motion.tr>
                 ))}

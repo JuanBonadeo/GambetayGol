@@ -9,7 +9,10 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useToast } from "@/components/admin/Toast";
 import ImageUploader, { ProductImageEntry } from "@/components/admin/ImageUploader";
 
-interface Club { id: string; nombre: string; }
+interface Liga { id: string; nombre: string; }
+interface Club { id: string; nombre: string; ligaId: string; }
+interface ProductVariant { talla: string; stock: number; sku: string; bajoPedido: boolean; }
+interface Offer { activo: boolean; tipo: "PORCENTAJE" | "MONTO_FIJO"; descuento: number; desde: string; hasta: string; deletedAt: string | null; }
 interface Product {
   id: string;
   nombre: string;
@@ -23,6 +26,30 @@ interface Product {
   clubId: string;
   club: { nombre: string };
   images: { url: string; orden: number; esPrincipal: boolean }[];
+  variants: ProductVariant[];
+  offers: Offer[];
+}
+
+function getActiveOffer(offers: Offer[]): Offer | null {
+  const now = new Date();
+  return offers?.find(
+    (o) => o.activo && o.deletedAt === null && new Date(o.desde) <= now && new Date(o.hasta) >= now
+  ) ?? null;
+}
+
+const TALLAS = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"] as const;
+type Talla = typeof TALLAS[number];
+
+interface VariantEntry {
+  talla: Talla;
+  stock: number;
+}
+
+function buildDefaultVariants(existing?: ProductVariant[]): VariantEntry[] {
+  return TALLAS.map((talla) => ({
+    talla,
+    stock: existing?.find((v) => v.talla === talla)?.stock ?? 0,
+  }));
 }
 
 const CATEGORIAS = ["Fan", "Jugador", "Retro"];
@@ -41,12 +68,14 @@ export default function ProductosPage() {
   const { toast } = useToast();
   const [productos, setProductos] = useState<Product[]>([]);
   const [clubes, setClubes] = useState<Club[]>([]);
+  const [ligas, setLigas] = useState<Liga[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Filters
   const [search, setSearch] = useState("");
+  const [filterLiga, setFilterLiga] = useState("");
   const [filterClub, setFilterClub] = useState("");
   const [filterCat, setFilterCat] = useState("");
 
@@ -55,17 +84,20 @@ export default function ProductosPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [images, setImages] = useState<ProductImageEntry[]>([]);
+  const [variantEntries, setVariantEntries] = useState<VariantEntry[]>(() => buildDefaultVariants());
   const [formError, setFormError] = useState("");
   const [formLoading, setFormLoading] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [pRes, cRes] = await Promise.all([
+    const [pRes, cRes, lRes] = await Promise.all([
       fetch("/api/products"),
       fetch("/api/clubs"),
+      fetch("/api/ligas"),
     ]);
     setProductos((await pRes.json()).data || []);
     setClubes((await cRes.json()).data || []);
+    setLigas((await lRes.json()).data || []);
     setLoading(false);
   }, []);
 
@@ -75,6 +107,7 @@ export default function ProductosPage() {
     setEditingId(null);
     setForm(emptyForm);
     setImages([]);
+    setVariantEntries(buildDefaultVariants());
     setFormError("");
     setDrawerOpen(true);
   };
@@ -91,12 +124,19 @@ export default function ProductosPage() {
         .sort((a, b) => a.orden - b.orden)
         .map((img) => ({ url: img.url, orden: img.orden, esPrincipal: img.esPrincipal }))
     );
+    setVariantEntries(buildDefaultVariants(p.variants ?? []));
     setFormError("");
     setDrawerOpen(true);
   };
 
   const handleNombre = (nombre: string) => {
-    setForm((f) => ({ ...f, nombre, slug: editingId ? f.slug : toSlug(nombre) }));
+    setForm((f) => ({ ...f, nombre, slug: toSlug(nombre) }));
+  };
+
+  const updateVariantStock = (talla: Talla, stock: number) => {
+    setVariantEntries((prev) =>
+      prev.map((v) => (v.talla === talla ? { ...v, stock } : v))
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,10 +146,19 @@ export default function ProductosPage() {
 
     const url = editingId ? `/api/products/${editingId}` : "/api/products";
     const method = editingId ? "PUT" : "POST";
+    const slug = form.slug;
+    const variants = variantEntries
+      .filter((v) => v.stock > 0)
+      .map(({ talla, stock }) => ({
+        talla,
+        stock,
+        sku: `${slug}-${talla.toLowerCase()}`,
+        bajoPedido: false,
+      }));
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, precio: Number(form.precio), images }),
+      body: JSON.stringify({ ...form, precio: Number(form.precio), images, variants }),
     });
 
     setFormLoading(false);
@@ -150,13 +199,19 @@ export default function ProductosPage() {
     setSavingId(null);
   };
 
+  // Clubs visible en el selector (filtrados por liga seleccionada)
+  const clubesFiltrados = filterLiga
+    ? clubes.filter((c) => c.ligaId === filterLiga)
+    : clubes;
+
   // Filtered list
   const filtered = productos.filter((p) => {
     const q = search.toLowerCase();
     const matchSearch = !q || p.nombre.toLowerCase().includes(q);
+    const matchLiga = !filterLiga || clubes.find((c) => c.id === p.clubId)?.ligaId === filterLiga;
     const matchClub = !filterClub || p.clubId === filterClub;
     const matchCat = !filterCat || p.categoria === filterCat;
-    return matchSearch && matchClub && matchCat;
+    return matchSearch && matchLiga && matchClub && matchCat;
   });
 
   const inputCls = "w-full bg-[#0a0a0a] border border-[#1e1e1e] rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#38bdf8] transition-colors";
@@ -196,12 +251,20 @@ export default function ProductosPage() {
           />
         </div>
         <select
+          value={filterLiga}
+          onChange={(e) => { setFilterLiga(e.target.value); setFilterClub(""); }}
+          className="bg-[#111] border border-[#1e1e1e] rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-[#38bdf8] transition-colors"
+        >
+          <option value="">Todas las ligas</option>
+          {ligas.map((l) => <option key={l.id} value={l.id}>{l.nombre}</option>)}
+        </select>
+        <select
           value={filterClub}
           onChange={(e) => setFilterClub(e.target.value)}
           className="bg-[#111] border border-[#1e1e1e] rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-[#38bdf8] transition-colors"
         >
           <option value="">Todos los clubes</option>
-          {clubes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          {clubesFiltrados.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         <select
           value={filterCat}
@@ -211,9 +274,9 @@ export default function ProductosPage() {
           <option value="">Todas las categorías</option>
           {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
-        {(search || filterClub || filterCat) && (
+        {(search || filterLiga || filterClub || filterCat) && (
           <button
-            onClick={() => { setSearch(""); setFilterClub(""); setFilterCat(""); }}
+            onClick={() => { setSearch(""); setFilterLiga(""); setFilterClub(""); setFilterCat(""); }}
             className="text-xs text-gray-500 hover:text-white px-3 py-2 rounded-lg border border-[#1e1e1e] hover:border-gray-600 transition-colors"
           >
             Limpiar
@@ -226,33 +289,35 @@ export default function ProductosPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[#1e1e1e]">
-              <th className="px-5 py-3 text-left text-xs text-gray-500 font-medium uppercase tracking-wider w-12"></th>
-              <th className="px-5 py-3 text-left text-xs text-gray-500 font-medium uppercase tracking-wider">Nombre</th>
-              <th className="px-5 py-3 text-left text-xs text-gray-500 font-medium uppercase tracking-wider">Club</th>
-              <th className="px-5 py-3 text-left text-xs text-gray-500 font-medium uppercase tracking-wider">Categoría</th>
-              <th className="px-5 py-3 text-right text-xs text-gray-500 font-medium uppercase tracking-wider">Precio</th>
-              <th className="px-5 py-3 text-center text-xs text-gray-500 font-medium uppercase tracking-wider">Destacado</th>
-              <th className="px-5 py-3 text-center text-xs text-gray-500 font-medium uppercase tracking-wider">Estado</th>
-              <th className="px-5 py-3 text-center text-xs text-gray-500 font-medium uppercase tracking-wider w-24">Acciones</th>
+              <th className="px-4 py-3 text-left text-xs text-gray-500 font-medium uppercase tracking-wider w-16"></th>
+              <th className="px-4 py-3 text-left text-xs text-gray-500 font-medium uppercase tracking-wider">Nombre</th>
+              <th className="px-4 py-3 text-left text-xs text-gray-500 font-medium uppercase tracking-wider">Club</th>
+              <th className="px-4 py-3 text-left text-xs text-gray-500 font-medium uppercase tracking-wider">Categoría</th>
+              <th className="px-4 py-3 text-right text-xs text-gray-500 font-medium uppercase tracking-wider">Precio</th>
+              <th className="px-4 py-3 text-center text-xs text-gray-500 font-medium uppercase tracking-wider">Stock</th>
+              <th className="px-4 py-3 text-center text-xs text-gray-500 font-medium uppercase tracking-wider">Destacado</th>
+              <th className="px-4 py-3 text-center text-xs text-gray-500 font-medium uppercase tracking-wider">Activo</th>
+              <th className="px-4 py-3 w-10"></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <tr key={i} className="border-b border-[#1e1e1e]/50">
-                  <td className="px-5 py-3"><div className="w-9 h-9 rounded bg-[#1e1e1e] animate-pulse" /></td>
-                  <td className="px-5 py-3"><div className="h-3 w-36 bg-[#1e1e1e] rounded animate-pulse" /></td>
-                  <td className="px-5 py-3"><div className="h-3 w-24 bg-[#1e1e1e] rounded animate-pulse" /></td>
-                  <td className="px-5 py-3"><div className="h-3 w-16 bg-[#1e1e1e] rounded animate-pulse" /></td>
-                  <td className="px-5 py-3"><div className="h-3 w-16 bg-[#1e1e1e] rounded animate-pulse ml-auto" /></td>
-                  <td className="px-5 py-3"><div className="h-5 w-9 bg-[#1e1e1e] rounded-full animate-pulse mx-auto" /></td>
-                  <td className="px-5 py-3"><div className="h-5 w-9 bg-[#1e1e1e] rounded-full animate-pulse mx-auto" /></td>
-                  <td className="px-5 py-3"></td>
+                  <td className="px-4 py-2"><div className="w-14 h-[72px] rounded-md bg-[#1e1e1e] animate-pulse" /></td>
+                  <td className="px-4 py-2"><div className="h-3 w-36 bg-[#1e1e1e] rounded animate-pulse" /></td>
+                  <td className="px-4 py-2"><div className="h-3 w-24 bg-[#1e1e1e] rounded animate-pulse" /></td>
+                  <td className="px-4 py-2"><div className="h-3 w-16 bg-[#1e1e1e] rounded animate-pulse" /></td>
+                  <td className="px-4 py-2"><div className="h-3 w-16 bg-[#1e1e1e] rounded animate-pulse ml-auto" /></td>
+                  <td className="px-4 py-2"><div className="h-3 w-10 bg-[#1e1e1e] rounded animate-pulse mx-auto" /></td>
+                  <td className="px-4 py-2"><div className="h-5 w-9 bg-[#1e1e1e] rounded-full animate-pulse mx-auto" /></td>
+                  <td className="px-4 py-2"><div className="h-5 w-9 bg-[#1e1e1e] rounded-full animate-pulse mx-auto" /></td>
+                  <td className="px-4 py-2"></td>
                 </tr>
               ))
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={8}>
+                <td colSpan={9}>
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <svg className="text-gray-700 mb-3" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
@@ -273,72 +338,119 @@ export default function ProductosPage() {
               </tr>
             ) : (
               <AnimatePresence initial={false}>
-                {filtered.map((p, i) => (
-                  <motion.tr
-                    key={p.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ delay: i * 0.03 }}
-                    className={`border-b border-[#1e1e1e]/50 hover:bg-white/[0.02] transition-colors group ${deletingId === p.id ? "opacity-40" : ""}`}
-                  >
-                    {/* Thumbnail */}
-                    <td className="px-5 py-3">
-                      <div className="w-9 h-9 rounded-md bg-[#1a1a1a] overflow-hidden border border-[#1e1e1e] flex-shrink-0">
-                        {p.images?.find((i) => i.esPrincipal)?.url ? (
-                          <Image
-                            src={p.images.find((i) => i.esPrincipal)!.url}
-                            alt={p.nombre} width={36} height={36}
-                            className="object-cover w-full h-full"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <svg className="text-gray-700" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                              <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" />
-                              <polyline points="21 15 16 10 5 21" />
-                            </svg>
+                {filtered.map((p, i) => {
+                  const totalStock = (p.variants ?? []).reduce((s, v) => s + v.stock, 0);
+                  const variantesConStock = (p.variants ?? []).filter((v) => v.stock > 0);
+                  const imgUrl = p.images?.find((img) => img.esPrincipal)?.url ?? p.images?.[0]?.url;
+                  const offer = getActiveOffer(p.offers ?? []);
+                  const finalPrice = offer
+                    ? offer.tipo === "PORCENTAJE"
+                      ? p.precio * (1 - offer.descuento / 100)
+                      : p.precio - offer.descuento
+                    : null;
+                  return (
+                    <motion.tr
+                      key={p.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ delay: i * 0.03 }}
+                      onClick={() => openEdit(p)}
+                      className={`border-b border-[#1e1e1e]/50 hover:bg-white/[0.03] transition-colors group cursor-pointer ${deletingId === p.id ? "opacity-40" : ""}`}
+                    >
+                      {/* Thumbnail */}
+                      <td className="px-4 py-2">
+                        <div className="w-14 h-[72px] rounded-md bg-[#1a1a1a] overflow-hidden border border-[#1e1e1e] flex-shrink-0">
+                          {imgUrl ? (
+                            <Image src={imgUrl} alt={p.nombre} width={56} height={72} className="object-cover w-full h-full" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <svg className="text-gray-700" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" />
+                                <polyline points="21 15 16 10 5 21" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Nombre */}
+                      <td className="px-4 py-2">
+                        <span className="text-white text-xs font-medium">{p.nombre}</span>
+                        {p.bajoPedido && <span className="ml-2"><StatusBadge variant="bajo-pedido" /></span>}
+                      </td>
+
+                      <td className="px-4 py-2 text-gray-400 text-xs">{p.club?.nombre}</td>
+                      <td className="px-4 py-2 text-gray-400 text-xs">{p.categoria}</td>
+
+                      {/* Precio */}
+                      <td className="px-4 py-2 text-right tabular-nums">
+                        {offer && finalPrice !== null ? (
+                          <div className="flex flex-col items-end gap-0.5">
+                            <span className="text-xs font-semibold text-[#38bdf8]">
+                              ${Math.round(finalPrice).toLocaleString("es-AR")}
+                            </span>
+                            <span className="text-[10px] text-gray-600 line-through leading-none">
+                              ${p.precio.toLocaleString("es-AR")}
+                            </span>
+                            <span className="text-[9px] font-black uppercase tracking-wider text-[#38bdf8]/70">
+                              {offer.tipo === "PORCENTAJE" ? `-${offer.descuento}%` : `-$${offer.descuento.toLocaleString("es-AR")}`}
+                            </span>
                           </div>
+                        ) : (
+                          <span className="text-white text-xs font-medium">
+                            ${p.precio.toLocaleString("es-AR")}
+                          </span>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className="text-white text-xs font-medium">{p.nombre}</span>
-                      {p.bajoPedido && <span className="ml-2"><StatusBadge variant="bajo-pedido" /></span>}
-                    </td>
-                    <td className="px-5 py-3 text-gray-400 text-xs">{p.club?.nombre}</td>
-                    <td className="px-5 py-3 text-gray-400 text-xs">{p.categoria}</td>
-                    <td className="px-5 py-3 text-white text-xs font-medium text-right tabular-nums">
-                      ${p.precio.toLocaleString("es-AR")}
-                    </td>
-                    <td className="px-5 py-3 text-center">
-                      <ToggleSwitch
-                        checked={p.destacado}
-                        onChange={() => handleToggle(p, "destacado")}
-                        disabled={savingId === p.id}
-                      />
-                    </td>
-                    <td className="px-5 py-3 text-center">
-                      <ToggleSwitch
-                        checked={p.activo}
-                        onChange={() => handleToggle(p, "activo")}
-                        disabled={savingId === p.id}
-                      />
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => openEdit(p)}
-                          className="p-1.5 text-gray-500 hover:text-[#38bdf8] hover:bg-[#38bdf8]/10 rounded transition-colors"
-                          title="Editar"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                        </button>
+                      </td>
+
+                      {/* Stock con tooltip */}
+                      <td className="px-4 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="relative inline-block group/stock">
+                          <span className={`text-xs font-semibold tabular-nums ${totalStock === 0 ? "text-gray-600" : totalStock < 5 ? "text-amber-400" : "text-emerald-400"}`}>
+                            {totalStock}
+                          </span>
+                          {variantesConStock.length > 0 && (
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 hidden group-hover/stock:block">
+                              <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 shadow-xl min-w-max">
+                                <div className="flex gap-2">
+                                  {variantesConStock.map((v) => (
+                                    <div key={v.talla} className="flex flex-col items-center gap-0.5">
+                                      <span className="text-[10px] text-gray-500 font-medium uppercase">{v.talla}</span>
+                                      <span className="text-xs text-white font-bold">{v.stock}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="w-2 h-2 bg-[#1a1a1a] border-r border-b border-[#2a2a2a] rotate-45 mx-auto -mt-1" />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Destacado */}
+                      <td className="px-4 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                        <ToggleSwitch
+                          checked={p.destacado}
+                          onChange={() => handleToggle(p, "destacado")}
+                          disabled={savingId === p.id}
+                        />
+                      </td>
+
+                      {/* Estado */}
+                      <td className="px-4 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                        <ToggleSwitch
+                          checked={p.activo}
+                          onChange={() => handleToggle(p, "activo")}
+                          disabled={savingId === p.id}
+                        />
+                      </td>
+
+                      {/* Delete */}
+                      <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleDelete(p.id)}
-                          className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+                          className="p-1.5 text-gray-700 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors opacity-0 group-hover:opacity-100"
                           title="Eliminar"
                         >
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -347,10 +459,10 @@ export default function ProductosPage() {
                             <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
                           </svg>
                         </button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
+                      </td>
+                    </motion.tr>
+                  );
+                })}
               </AnimatePresence>
             )}
           </tbody>
@@ -378,17 +490,6 @@ export default function ProductosPage() {
               value={form.nombre}
               onChange={(e) => handleNombre(e.target.value)}
               placeholder="Camiseta Titular 2024"
-            />
-          </div>
-
-          <div>
-            <label className={labelCls}>Slug</label>
-            <input
-              required
-              className={inputCls}
-              value={form.slug}
-              onChange={(e) => setForm({ ...form, slug: e.target.value })}
-              placeholder="camiseta-titular-2024"
             />
           </div>
 
@@ -458,6 +559,33 @@ export default function ProductosPage() {
                 />
               </div>
             ))}
+          </div>
+
+          {/* Variants / Stock por talle */}
+          <div>
+            <label className={labelCls}>Stock por talle</label>
+            <div className="grid grid-cols-7 gap-2">
+              {variantEntries.map((v) => (
+                <div key={v.talla} className="flex flex-col items-center gap-1">
+                  <span className={`text-[11px] font-black uppercase tracking-wider ${v.stock > 0 ? "text-[#38bdf8]" : "text-gray-600"}`}>
+                    {v.talla}
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={v.stock === 0 ? "" : v.stock}
+                    onChange={(e) => updateVariantStock(v.talla, Math.max(0, Number(e.target.value || 0)))}
+                    placeholder="0"
+                    className={`w-full text-center bg-[#0a0a0a] border rounded px-1 py-1.5 text-xs text-white focus:outline-none transition-colors ${
+                      v.stock > 0 ? "border-[#38bdf8]/50 focus:border-[#38bdf8]" : "border-[#1e1e1e] focus:border-[#38bdf8]"
+                    }`}
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-600 mt-1.5">
+              {variantEntries.filter((v) => v.stock > 0).length} talle(s) con stock
+            </p>
           </div>
 
           {/* Images */}

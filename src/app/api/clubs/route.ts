@@ -7,7 +7,7 @@ import { ClubSchema } from "@/lib/validations/club";
 export async function GET() {
   try {
     const data = await prisma.club.findMany({
-      include: { pais: true, liga: true },
+      include: { liga: { include: { pais: true } } },
       orderBy: { nombre: 'asc' }
     });
     return NextResponse.json({ data });
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 
     const data = await prisma.club.create({
       data: parsed.data,
-      include: { pais: true, liga: true }
+      include: { liga: { include: { pais: true } } }
     });
 
     return NextResponse.json({ data }, { status: 201 });

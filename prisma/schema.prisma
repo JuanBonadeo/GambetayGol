@@ -61,10 +61,13 @@ model Verification {
 }
 
 // application models
-enum Categoria {
-  Fan
-  Jugador
-  Retro
+model Categoria {
+  id        String    @id @default(cuid())
+  nombre    String    @unique
+  slug      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 enum Talla {
@@ -86,7 +89,6 @@ model Pais {
   id     String @id @default(cuid())
   nombre String
   codigo String @unique
-  clubes Club[]
   ligas  Liga[]
 }
 
@@ -103,26 +105,25 @@ model Liga {
 }
 
 model Club {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   nombre    String
-  slug      String   @unique
+  slug      String    @unique
   escudo    String?
-  paisId    String
   ligaId    String
-  pais      Pais     @relation(fields: [paisId], references: [id])
-  liga      Liga     @relation(fields: [ligaId], references: [id])
+  liga      Liga      @relation(fields: [ligaId], references: [id])
   products  Product[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Product {
   id          String           @id @default(cuid())
   nombre      String
   slug        String           @unique
-  descripcion String?
-  categoria   Categoria
-  precio      Float
+  descripcion  String?
+  categoriaId  String
+  categoria    Categoria        @relation(fields: [categoriaId], references: [id])
+  precio       Float
   destacado   Boolean          @default(false)
   bajoPedido  Boolean          @default(false)
   activo      Boolean          @default(true)
