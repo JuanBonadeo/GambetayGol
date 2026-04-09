@@ -36,7 +36,7 @@ export default function RelatedProducts({
       (p) =>
         p.slug !== currentSlug &&
         p.activo &&
-        (p.clubId === currentClubId || p.categoria === currentCategoria)
+        (p.clubId === currentClubId || p.categoriaId === currentCategoria)
     )
     .slice(0, 4);
 

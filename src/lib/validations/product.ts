@@ -4,7 +4,7 @@ export const ProductSchema = z.object({
   nombre: z.string().min(1),
   slug: z.string().min(1),
   descripcion: z.string().nullable().optional(),
-  categoria: z.enum(["Fan", "Jugador", "Retro"]),
+  categoriaId: z.string().min(1),
   precio: z.number().min(0),
   destacado: z.boolean().default(false),
   bajoPedido: z.boolean().default(false),

@@ -3,16 +3,16 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion, type Variants } from "framer-motion";
-import { Product, Categoria, getPrimaryImage } from "@/types";
+import { Product, getPrimaryImage } from "@/types";
 
 interface CategoriesGridProps {
   products: Product[];
 }
 
-const CATEGORIES: { key: Categoria; label: string; description: string }[] = [
-  { key: "Retro", label: "RETRO", description: "Historia bordada en cada costura" },
-  { key: "Fan", label: "FAN", description: "Para los que viven el juego" },
-  { key: "Jugador", label: "JUGADOR", description: "La versión del campo" },
+const CATEGORIES: { slug: string; label: string; description: string }[] = [
+  { slug: "retro", label: "RETRO", description: "Historia bordada en cada costura" },
+  { slug: "fan", label: "FAN", description: "Para los que viven el juego" },
+  { slug: "jugador", label: "JUGADOR", description: "La versión del campo" },
 ];
 
 const containerVariants: Variants = {
@@ -26,8 +26,8 @@ const cardVariants: Variants = {
 };
 
 export default function CategoriesGrid({ products }: CategoriesGridProps) {
-  const getImageForCategory = (cat: Categoria) => {
-    const product = products.find((p) => p.categoria === cat);
+  const getImageForCategory = (slug: string) => {
+    const product = products.find((p) => p.categoria?.slug === slug);
     return product ? getPrimaryImage(product) : null;
   };
 
@@ -42,15 +42,15 @@ export default function CategoriesGrid({ products }: CategoriesGridProps) {
           className="grid grid-cols-1 md:grid-cols-3 gap-3 h-auto md:h-[600px]"
         >
           {CATEGORIES.map((cat) => {
-            const imgUrl = getImageForCategory(cat.key);
+            const imgUrl = getImageForCategory(cat.slug);
             return (
               <motion.div
-                key={cat.key}
+                key={cat.slug}
                 variants={cardVariants}
                 className="relative overflow-hidden group cursor-pointer bg-[#1b1b1b] h-[360px] md:h-full"
               >
                 <Link
-                  href={`/productos?categoria=${cat.key}`}
+                  href={`/productos?categoria=${cat.slug}`}
                   className="block w-full h-full"
                 >
                   {/* Image */}

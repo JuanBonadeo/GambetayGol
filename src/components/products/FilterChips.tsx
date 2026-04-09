@@ -5,16 +5,18 @@ import { Categoria, Liga } from "@/types";
 
 interface FilterChipsProps {
   selectedLigas: string[];
-  selectedCategorias: Categoria[];
+  selectedCategorias: string[];
   ligas: Liga[];
+  categorias: Categoria[];
   onRemoveLiga: (id: string) => void;
-  onRemoveCategoria: (cat: Categoria) => void;
+  onRemoveCategoria: (id: string) => void;
 }
 
 export default function FilterChips({
   selectedLigas,
   selectedCategorias,
   ligas,
+  categorias,
   onRemoveLiga,
   onRemoveCategoria,
 }: FilterChipsProps) {
@@ -22,6 +24,7 @@ export default function FilterChips({
   if (!hasAny) return null;
 
   const getLigaNombre = (id: string) => ligas.find((l) => l.id === id)?.nombre ?? id;
+  const getCategoriaNombre = (id: string) => categorias.find((c) => c.id === id)?.nombre ?? id;
 
   return (
     <div className="flex flex-wrap gap-2 mt-4">
@@ -41,17 +44,17 @@ export default function FilterChips({
           </motion.button>
         ))}
 
-        {selectedCategorias.map((cat) => (
+        {selectedCategorias.map((id) => (
           <motion.button
-            key={`cat-${cat}`}
+            key={`cat-${id}`}
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
             transition={{ duration: 0.15 }}
-            onClick={() => onRemoveCategoria(cat)}
+            onClick={() => onRemoveCategoria(id)}
             className="flex items-center gap-2 bg-[#34b5fa]/20 border border-[#34b5fa]/40 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#34b5fa] hover:bg-[#34b5fa]/30 transition-colors duration-200"
           >
-            {cat}
+            {getCategoriaNombre(id)}
             <span>×</span>
           </motion.button>
         ))}

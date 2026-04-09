@@ -42,7 +42,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
             {product.club.nombre} — {product.club.liga?.nombre}
           </p>
           <p className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
-            {product.categoria}
+            {product.categoria?.nombre}
           </p>
         </div>
 

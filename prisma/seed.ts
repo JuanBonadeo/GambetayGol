@@ -153,13 +153,29 @@ async function main() {
   }
   console.log(`Clubes: ${Object.keys(clubes).length} creados/actualizados`)
 
+  // ─── Categorías ────────────────────────────────────────────────────────────
+  const categoriasData = [
+    { nombre: 'Fan',     slug: 'fan' },
+    { nombre: 'Jugador', slug: 'jugador' },
+    { nombre: 'Retro',   slug: 'retro' },
+  ]
+  const categorias: Record<string, { id: string }> = {}
+  for (const c of categoriasData) {
+    categorias[c.slug] = await prisma.categoria.upsert({
+      where: { slug: c.slug },
+      update: { nombre: c.nombre },
+      create: c,
+    })
+  }
+  console.log(`Categorías: ${Object.keys(categorias).length} creadas/actualizadas`)
+
   // ─── Productos de ejemplo ──────────────────────────────────────────────────
   const productosEjemplo = [
     {
       nombre: 'Camiseta Boca Juniors Titular 2024',
       slug: 'camiseta-boca-titular-2024',
       descripcion: 'La nueva piel del Xeneize.',
-      categoria: 'Fan' as const,
+      categoriaSlug: 'fan',
       precio: 85000,
       clubSlug: 'boca-juniors',
       destacado: true,
@@ -173,7 +189,7 @@ async function main() {
       nombre: 'Camiseta Real Madrid Titular 2024',
       slug: 'camiseta-madrid-titular-2024',
       descripcion: 'El rey de Europa.',
-      categoria: 'Jugador' as const,
+      categoriaSlug: 'jugador',
       precio: 120000,
       clubSlug: 'real-madrid',
       destacado: false,
@@ -186,7 +202,7 @@ async function main() {
       nombre: 'Camiseta Liverpool Titular 2024',
       slug: 'camiseta-liverpool-titular-2024',
       descripcion: 'You\'ll Never Walk Alone.',
-      categoria: 'Fan' as const,
+      categoriaSlug: 'fan',
       precio: 110000,
       clubSlug: 'liverpool',
       destacado: true,
@@ -200,7 +216,7 @@ async function main() {
       nombre: 'Camiseta Bayern München Titular 2024',
       slug: 'camiseta-bayern-titular-2024',
       descripcion: 'Mia san mia.',
-      categoria: 'Jugador' as const,
+      categoriaSlug: 'jugador',
       precio: 115000,
       clubSlug: 'bayern-munich',
       destacado: true,
@@ -214,7 +230,7 @@ async function main() {
       nombre: 'Camiseta Flamengo Titular 2024',
       slug: 'camiseta-flamengo-titular-2024',
       descripcion: 'Mengão para o mundo.',
-      categoria: 'Fan' as const,
+      categoriaSlug: 'fan',
       precio: 75000,
       clubSlug: 'flamengo',
       destacado: true,
@@ -228,7 +244,7 @@ async function main() {
       nombre: 'Camiseta Selección Argentina 2022 Retro',
       slug: 'camiseta-seleccion-argentina-2022-retro',
       descripcion: 'La campeona del mundo. Edición retro.',
-      categoria: 'Retro' as const,
+      categoriaSlug: 'retro',
       precio: 95000,
       clubSlug: 'seleccion-argentina',
       destacado: true,
@@ -242,13 +258,14 @@ async function main() {
   ]
 
   for (const p of productosEjemplo) {
-    const { variants, imageUrl, clubSlug, ...rest } = p
+    const { variants, imageUrl, clubSlug, categoriaSlug, ...rest } = p
     await prisma.product.upsert({
       where: { slug: p.slug },
       update: {},
       create: {
         ...rest,
         clubId: clubes[clubSlug].id,
+        categoriaId: categorias[categoriaSlug].id,
         variants: { create: variants },
         images: {
           create: [{ url: imageUrl, esPrincipal: true, orden: 0 }],

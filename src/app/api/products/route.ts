@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const data = await prisma.product.findMany({
       where: { deletedAt: null },
-      include: { club: true, variants: true, images: true, offers: true },
+      include: { club: true, categoria: true, variants: true, images: true, offers: true },
       orderBy: { createdAt: 'desc' }
     });
     return NextResponse.json({ data });

@@ -1,4 +1,4 @@
-import { Product, Liga, ApiResponse } from "@/types";
+import { Product, Liga, Categoria, ApiResponse } from "@/types";
 import HeroSection from "@/components/home/HeroSection";
 import CategoriesGrid from "@/components/home/CategoriesGrid";
 import ProductSlider from "@/components/home/ProductSlider";
@@ -10,25 +10,27 @@ const SA_CODES = new Set(["AR", "BR", "UY", "CL", "CO", "PE", "PY", "BO", "EC", 
 // European country codes
 const EU_CODES = new Set(["GB", "ES", "IT", "DE", "FR", "PT", "NL", "BE", "RU", "TR", "GR", "SE", "NO", "DK"]);
 
-async function getData(): Promise<{ products: Product[]; ligas: Liga[] }> {
+async function getData(): Promise<{ products: Product[]; ligas: Liga[]; categorias: Categoria[] }> {
   const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
   try {
-    const [productsRes, ligasRes] = await Promise.all([
+    const [productsRes, ligasRes, categoriasRes] = await Promise.all([
       fetch(`${base}/api/products`, { cache: "no-store" }),
       fetch(`${base}/api/ligas`, { cache: "no-store" }),
+      fetch(`${base}/api/categorias`, { cache: "no-store" }),
     ]);
     const products: ApiResponse<Product[]> = productsRes.ok ? await productsRes.json() : { data: [] };
     const ligas: ApiResponse<Liga[]> = ligasRes.ok ? await ligasRes.json() : { data: [] };
-    return { products: products.data ?? [], ligas: ligas.data ?? [] };
+    const categorias: ApiResponse<Categoria[]> = categoriasRes.ok ? await categoriasRes.json() : { data: [] };
+    return { products: products.data ?? [], ligas: ligas.data ?? [], categorias: categorias.data ?? [] };
   } catch {
-    return { products: [], ligas: [] };
+    return { products: [], ligas: [], categorias: [] };
   }
 }
 
 export default async function HomePage() {
-  const { products, ligas } = await getData();
+  const { products, ligas, categorias } = await getData();
 
-  const retroProducts = products.filter((p) => p.categoria === "Retro" && p.activo);
+  const retroProducts = products.filter((p) => p.categoria?.slug === "retro" && p.activo);
 
   const saProducts = retroProducts.filter((p) =>
     SA_CODES.has(p.club?.liga?.pais?.codigo ?? "")
@@ -60,7 +62,7 @@ export default async function HomePage() {
             TODOS LOS PRODUCTOS
           </h2>
         </div>
-        <ProductsClient products={products} ligas={ligas} padTop={false} />
+        <ProductsClient products={products} ligas={ligas} categorias={categorias} padTop={false} />
       </section>
     </PageTransition>
   );

@@ -6,23 +6,19 @@ import { Liga, Categoria } from "@/types";
 
 interface FilterSidebarProps {
   ligas: Liga[];
+  categorias: Categoria[];
   selectedLigas: string[];
-  selectedCategorias: Categoria[];
+  selectedCategorias: string[];
   ligaSearch: string;
   onToggleLiga: (id: string) => void;
-  onToggleCategoria: (cat: Categoria) => void;
+  onToggleCategoria: (id: string) => void;
   onLigaSearch: (q: string) => void;
   onClear: () => void;
 }
 
-const CATEGORIAS: { key: Categoria; label: string }[] = [
-  { key: "Retro", label: "RETRO" },
-  { key: "Fan", label: "FAN" },
-  { key: "Jugador", label: "JUGADOR" },
-];
-
 export default function FilterSidebar({
   ligas,
+  categorias,
   selectedLigas,
   selectedCategorias,
   ligaSearch,
@@ -145,12 +141,12 @@ export default function FilterSidebar({
               transition={{ duration: 0.25, ease: "easeInOut" }}
               className="overflow-hidden space-y-1"
             >
-              {CATEGORIAS.map((cat) => {
-                const active = selectedCategorias.includes(cat.key);
+              {categorias.map((cat) => {
+                const active = selectedCategorias.includes(cat.id);
                 return (
                   <button
-                    key={cat.key}
-                    onClick={() => onToggleCategoria(cat.key)}
+                    key={cat.id}
+                    onClick={() => onToggleCategoria(cat.id)}
                     className={`flex items-center gap-3 w-full px-3 py-2 text-[10px] font-black uppercase tracking-wider transition-colors duration-200 text-left ${
                       active
                         ? "bg-[#34b5fa] text-[#001e2f]"
@@ -162,7 +158,7 @@ export default function FilterSidebar({
                         active ? "bg-[#001e2f] border-[#001e2f]" : "border-[#919191]"
                       }`}
                     />
-                    {cat.label}
+                    {cat.nombre.toUpperCase()}
                   </button>
                 );
               })}

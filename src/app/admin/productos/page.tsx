@@ -10,6 +10,7 @@ import { useToast } from "@/components/admin/Toast";
 import ImageUploader, { ProductImageEntry } from "@/components/admin/ImageUploader";
 
 interface Liga { id: string; nombre: string; }
+interface Categoria { id: string; nombre: string; }
 interface Club { id: string; nombre: string; ligaId: string; }
 interface ProductVariant { talla: string; stock: number; sku: string; bajoPedido: boolean; }
 interface Offer { activo: boolean; tipo: "PORCENTAJE" | "MONTO_FIJO"; descuento: number; desde: string; hasta: string; deletedAt: string | null; }
@@ -18,7 +19,8 @@ interface Product {
   nombre: string;
   slug: string;
   descripcion: string;
-  categoria: string;
+  categoriaId: string;
+  categoria: Categoria;
   precio: number;
   destacado: boolean;
   bajoPedido: boolean;
@@ -52,10 +54,8 @@ function buildDefaultVariants(existing?: ProductVariant[]): VariantEntry[] {
   }));
 }
 
-const CATEGORIAS = ["Fan", "Jugador", "Retro"];
-
 const emptyForm = {
-  nombre: "", slug: "", descripcion: "", categoria: "Fan",
+  nombre: "", slug: "", descripcion: "", categoriaId: "",
   precio: 0, clubId: "", destacado: false, bajoPedido: false, activo: true,
 };
 
@@ -69,6 +69,7 @@ export default function ProductosPage() {
   const [productos, setProductos] = useState<Product[]>([]);
   const [clubes, setClubes] = useState<Club[]>([]);
   const [ligas, setLigas] = useState<Liga[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -90,14 +91,16 @@ export default function ProductosPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [pRes, cRes, lRes] = await Promise.all([
+    const [pRes, cRes, lRes, catRes] = await Promise.all([
       fetch("/api/products"),
       fetch("/api/clubs"),
       fetch("/api/ligas"),
+      fetch("/api/categorias"),
     ]);
     setProductos((await pRes.json()).data || []);
     setClubes((await cRes.json()).data || []);
     setLigas((await lRes.json()).data || []);
+    setCategorias((await catRes.json()).data || []);
     setLoading(false);
   }, []);
 
@@ -116,7 +119,7 @@ export default function ProductosPage() {
     setEditingId(p.id);
     setForm({
       nombre: p.nombre, slug: p.slug, descripcion: p.descripcion || "",
-      categoria: p.categoria, precio: p.precio, clubId: p.clubId,
+      categoriaId: p.categoriaId, precio: p.precio, clubId: p.clubId,
       destacado: p.destacado, bajoPedido: p.bajoPedido, activo: p.activo,
     });
     setImages(
@@ -191,7 +194,7 @@ export default function ProductosPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         nombre: updated.nombre, slug: updated.slug, descripcion: updated.descripcion,
-        categoria: updated.categoria, precio: updated.precio, clubId: updated.clubId,
+        categoriaId: updated.categoriaId, precio: updated.precio, clubId: updated.clubId,
         destacado: updated.destacado, bajoPedido: updated.bajoPedido, activo: updated.activo,
         images: updated.images.map((i) => ({ url: i.url, orden: i.orden, esPrincipal: i.esPrincipal })),
       }),
@@ -210,7 +213,7 @@ export default function ProductosPage() {
     const matchSearch = !q || p.nombre.toLowerCase().includes(q);
     const matchLiga = !filterLiga || clubes.find((c) => c.id === p.clubId)?.ligaId === filterLiga;
     const matchClub = !filterClub || p.clubId === filterClub;
-    const matchCat = !filterCat || p.categoria === filterCat;
+    const matchCat = !filterCat || p.categoriaId === filterCat;
     return matchSearch && matchLiga && matchClub && matchCat;
   });
 
@@ -272,7 +275,7 @@ export default function ProductosPage() {
           className="bg-[#111] border border-[#1e1e1e] rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-[#38bdf8] transition-colors"
         >
           <option value="">Todas las categorías</option>
-          {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
+          {categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         {(search || filterLiga || filterClub || filterCat) && (
           <button
@@ -381,7 +384,7 @@ export default function ProductosPage() {
                       </td>
 
                       <td className="px-4 py-2 text-gray-400 text-xs">{p.club?.nombre}</td>
-                      <td className="px-4 py-2 text-gray-400 text-xs">{p.categoria}</td>
+                      <td className="px-4 py-2 text-gray-400 text-xs">{p.categoria?.nombre}</td>
 
                       {/* Precio */}
                       <td className="px-4 py-2 text-right tabular-nums">
@@ -510,10 +513,11 @@ export default function ProductosPage() {
               <select
                 required
                 className={inputCls}
-                value={form.categoria}
-                onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+                value={form.categoriaId}
+                onChange={(e) => setForm({ ...form, categoriaId: e.target.value })}
               >
-                {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
+                <option value="">Seleccionar...</option>
+                {categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
             <div>

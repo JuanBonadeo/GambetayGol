@@ -1,7 +1,14 @@
 // Enums matching Prisma schema
-export type Categoria = "Fan" | "Jugador" | "Retro";
 export type Talla = "XS" | "S" | "M" | "L" | "XL" | "XXL" | "XXXL";
 export type OfferType = "PORCENTAJE" | "MONTO_FIJO";
+
+export interface Categoria {
+  id: string;
+  nombre: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface Pais {
   id: string;
@@ -71,6 +78,7 @@ export interface Product {
   nombre: string;
   slug: string;
   descripcion: string | null;
+  categoriaId: string;
   categoria: Categoria;
   precio: number;
   destacado: boolean;

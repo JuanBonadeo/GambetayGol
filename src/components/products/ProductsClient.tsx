@@ -12,19 +12,21 @@ const PAGE_SIZE = 24;
 interface ProductsClientProps {
   products: Product[];
   ligas: Liga[];
-  initialCategoria?: Categoria | null;
+  categorias: Categoria[];
+  initialCategoriaId?: string | null;
   padTop?: boolean;
 }
 
 export default function ProductsClient({
   products,
   ligas,
-  initialCategoria,
+  categorias,
+  initialCategoriaId,
   padTop = true,
 }: ProductsClientProps) {
   const [selectedLigas, setSelectedLigas] = useState<string[]>([]);
-  const [selectedCategorias, setSelectedCategorias] = useState<Categoria[]>(
-    initialCategoria ? [initialCategoria] : []
+  const [selectedCategorias, setSelectedCategorias] = useState<string[]>(
+    initialCategoriaId ? [initialCategoriaId] : []
   );
   const [sortBy, setSortBy] = useState<SortOption>("recientes");
   const [ligaSearch, setLigaSearch] = useState("");
@@ -37,7 +39,7 @@ export default function ProductsClient({
       result = result.filter((p) => selectedLigas.includes(p.club?.ligaId ?? ""));
     }
     if (selectedCategorias.length > 0) {
-      result = result.filter((p) => selectedCategorias.includes(p.categoria));
+      result = result.filter((p) => selectedCategorias.includes(p.categoriaId));
     }
 
     switch (sortBy) {
@@ -75,9 +77,9 @@ export default function ProductsClient({
     resetPage();
   };
 
-  const toggleCategoria = (cat: Categoria) => {
+  const toggleCategoria = (id: string) => {
     setSelectedCategorias((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
     );
     resetPage();
   };
@@ -91,9 +93,9 @@ export default function ProductsClient({
 
   return (
     <div className={`flex flex-col md:flex-row gap-12 ${padTop ? "pt-36" : "pt-0"} pb-24 px-6 max-w-[1600px] mx-auto`}>
-      {/* Sidebar */}
       <FilterSidebar
         ligas={ligas}
+        categorias={categorias}
         selectedLigas={selectedLigas}
         selectedCategorias={selectedCategorias}
         ligaSearch={ligaSearch}
@@ -103,9 +105,7 @@ export default function ProductsClient({
         onClear={clearAll}
       />
 
-      {/* Main content */}
       <div className="flex-1 min-w-0">
-        {/* Top bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#474747]/20 mb-4">
           <p className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
             MOSTRANDO {filteredProducts.length} RESULTADO
@@ -114,21 +114,19 @@ export default function ProductsClient({
           <SortDropdown value={sortBy} onChange={(v) => { setSortBy(v); resetPage(); }} />
         </div>
 
-        {/* Active filter chips */}
         <FilterChips
           selectedLigas={selectedLigas}
           selectedCategorias={selectedCategorias}
           ligas={ligas}
+          categorias={categorias}
           onRemoveLiga={toggleLiga}
           onRemoveCategoria={toggleCategoria}
         />
 
-        {/* Grid */}
         <div className="mt-6">
           <ProductGrid products={paginated} />
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-12">
             <PaginationButton

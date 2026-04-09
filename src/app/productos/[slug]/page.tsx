@@ -51,7 +51,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           products={products}
           currentSlug={product.slug}
           currentClubId={product.clubId}
-          currentCategoria={product.categoria}
+          currentCategoria={product.categoriaId}
         />
       </div>
     </PageTransition>
