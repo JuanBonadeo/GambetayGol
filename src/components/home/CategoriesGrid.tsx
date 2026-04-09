@@ -15,7 +15,7 @@ const CATEGORIES: { key: string; label: string; description: string; url: string
     key: "retro",
     label: "RETRO",
     description: "Historia bordada en cada costura",
-    url: "/retro.JPG",
+    url: "/retro.jpg",
     href: "/productos?categoria=retro",
   },
   {
@@ -29,7 +29,7 @@ const CATEGORIES: { key: string; label: string; description: string; url: string
     key: "selecciones",
     label: "SELECCIONES",
     description: "El orgullo de cada nación",
-    url: "/selecciones.JPG",
+    url: "/selecciones.jpg",
     href: "/productos?liga=selecciones",
   },
 ];
