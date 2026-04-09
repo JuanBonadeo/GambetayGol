@@ -6,6 +6,7 @@ import { FormDrawer } from "@/components/admin/FormDrawer";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ToggleSwitch } from "@/components/admin/ToggleSwitch";
 import { useToast } from "@/components/admin/Toast";
+import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 
 interface Product { id: string; nombre: string; }
 interface Offer {
@@ -37,6 +38,7 @@ function getOfferStatus(o: Offer) {
 
 export default function OfertasPage() {
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [ofertas, setOfertas] = useState<Offer[]>([]);
   const [productos, setProductos] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,7 +120,7 @@ export default function OfertasPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar esta oferta?")) return;
+    if (!await confirm("¿Eliminar esta oferta?")) return;
     setDeletingId(id);
     await fetch(`/api/offers/${id}`, { method: "DELETE" });
     setDeletingId(null);

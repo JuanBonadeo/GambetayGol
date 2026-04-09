@@ -7,6 +7,7 @@ import { FormDrawer } from "@/components/admin/FormDrawer";
 import { ToggleSwitch } from "@/components/admin/ToggleSwitch";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useToast } from "@/components/admin/Toast";
+import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 import ImageUploader, { ProductImageEntry } from "@/components/admin/ImageUploader";
 
 interface Liga { id: string; nombre: string; }
@@ -66,6 +67,7 @@ function toSlug(str: string) {
 
 export default function ProductosPage() {
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [productos, setProductos] = useState<Product[]>([]);
   const [clubes, setClubes] = useState<Club[]>([]);
   const [ligas, setLigas] = useState<Liga[]>([]);
@@ -177,7 +179,7 @@ export default function ProductosPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar este producto?")) return;
+    if (!await confirm("¿Eliminar este producto?")) return;
     setDeletingId(id);
     await fetch(`/api/products/${id}`, { method: "DELETE" });
     setDeletingId(null);

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { FormDrawer } from "@/components/admin/FormDrawer";
 import { useToast } from "@/components/admin/Toast";
+import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 import ImageUploader, { ProductImageEntry } from "@/components/admin/ImageUploader";
 
 interface Pais { id: string; nombre: string; }
@@ -27,6 +28,7 @@ function toSlug(str: string) {
 
 export default function LigasPage() {
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [ligas, setLigas] = useState<Liga[]>([]);
   const [paises, setPaises] = useState<Pais[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +102,7 @@ export default function LigasPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar esta liga?")) return;
+    if (!await confirm("¿Eliminar esta liga?")) return;
     setDeletingId(id);
     await fetch(`/api/ligas/${id}`, { method: "DELETE" });
     setDeletingId(null);

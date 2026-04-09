@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { ToastProvider } from "@/components/admin/Toast";
+import { ConfirmDialogProvider } from "@/components/admin/ConfirmDialog";
 
 const navLinks = [
   {
@@ -79,6 +80,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   return (
+    <ConfirmDialogProvider>
     <ToastProvider>
       <div className="flex min-h-screen bg-[#0a0a0a] text-white font-sans mt-20">
         {/* Sidebar */}
@@ -136,5 +138,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
     </ToastProvider>
+    </ConfirmDialogProvider>
   );
 }

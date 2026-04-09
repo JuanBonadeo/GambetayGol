@@ -4,11 +4,13 @@ import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FormDrawer } from "@/components/admin/FormDrawer";
 import { useToast } from "@/components/admin/Toast";
+import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 
 interface Categoria { id: string; nombre: string; slug: string; }
 
 export default function CategoriasPage() {
   const { toast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -68,7 +70,7 @@ export default function CategoriasPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar esta categoría? Los productos asociados quedarán sin categoría.")) return;
+    if (!await confirm("¿Eliminar esta categoría?", "Los productos asociados quedarán sin categoría.")) return;
     setDeletingId(id);
     await fetch(`/api/categorias/${id}`, { method: "DELETE" });
     setDeletingId(null);
