@@ -1,9 +1,12 @@
+export const dynamic = "force-dynamic";
+
 import { Product, Liga, Categoria, ApiResponse } from "@/types";
+import { getBaseUrl } from "@/lib/base-url";
 import ProductsClient from "@/components/products/ProductsClient";
 import PageTransition from "@/components/ui/PageTransition";
 
 async function getData() {
-  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const base = getBaseUrl();
   try {
     const [productsRes, ligasRes, categoriasRes] = await Promise.all([
       fetch(`${base}/api/products`, { cache: "no-store" }),

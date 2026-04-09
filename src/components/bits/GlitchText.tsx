@@ -63,7 +63,6 @@ export default function GlitchText({
   const text = dataText ?? (typeof children === "string" ? children : undefined);
 
   return (
-    // @ts-expect-error — dynamic tag
     <Tag
       className={`relative inline-block ${hovered ? "glitch-active" : ""} ${className}`}
       data-text={text}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, ReactNode } from "react";
 import {
   motion,
   useAnimationFrame,
@@ -21,7 +21,7 @@ function ParallaxText({
   children,
   baseVelocity = 50,
 }: {
-  children: string;
+  children: ReactNode;
   baseVelocity?: number;
 }) {
   const baseX = useMotionValue(0);

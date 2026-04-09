@@ -12,6 +12,13 @@ const nextConfig = {
       },
     ],
   },
+  // Disable client-side router cache so admin changes are reflected immediately
+  experimental: {
+    staleTimes: {
+      dynamic: 0,
+      static: 0,
+    },
+  },
 };
 
 export default nextConfig;

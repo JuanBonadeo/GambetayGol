@@ -25,7 +25,7 @@ export async function middleware(request: NextRequest) {
     
     // GET requests to products, clubs, ligas are public
     if (request.method === "GET") {
-      if (pathname.match(/^\/api\/(products|clubs|ligas)($|\/)/)) {
+      if (pathname.match(/^\/api\/(products|clubs|ligas|categorias)($|\/)/)) {
         return NextResponse.next();
       }
     }

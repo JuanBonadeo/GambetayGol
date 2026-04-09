@@ -1,4 +1,7 @@
+export const dynamic = "force-dynamic";
+
 import { Product, Liga, Categoria, ApiResponse } from "@/types";
+import { getBaseUrl } from "@/lib/base-url";
 import HeroSection from "@/components/home/HeroSection";
 import CategoriesGrid from "@/components/home/CategoriesGrid";
 import ProductSlider from "@/components/home/ProductSlider";
@@ -12,7 +15,7 @@ const SA_CODES = new Set(["AR", "BR", "UY", "CL", "CO", "PE", "PY", "BO", "EC", 
 const EU_CODES = new Set(["GB", "ES", "IT", "DE", "FR", "PT", "NL", "BE", "RU", "TR", "GR", "SE", "NO", "DK"]);
 
 async function getData(): Promise<{ products: Product[]; ligas: Liga[]; categorias: Categoria[] }> {
-  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const base = getBaseUrl();
   try {
     const [productsRes, ligasRes, categoriasRes] = await Promise.all([
       fetch(`${base}/api/products`, { cache: "no-store" }),
