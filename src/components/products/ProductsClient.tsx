@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Product, Liga, Categoria, Club } from "@/types";
 import FilterSidebar from "./FilterSidebar";
+import FilterDrawer from "./FilterDrawer";
 import SortDropdown, { SortOption } from "./SortDropdown";
 import FilterChips from "./FilterChips";
 import ProductGrid from "./ProductGrid";
@@ -37,6 +38,7 @@ export default function ProductsClient({
   const [ligaSearch, setLigaSearch] = useState("");
   const [clubSearch, setClubSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   // Derive unique clubs from products
   const allClubs = useMemo<Club[]>(() => {
@@ -124,27 +126,66 @@ export default function ProductsClient({
     resetPage();
   };
 
+  const totalActiveFilters =
+    selectedLigas.length + selectedCategorias.length + selectedClubs.length;
+
+  const sharedFilterProps = {
+    ligas,
+    categorias,
+    clubs: allClubs,
+    selectedLigas,
+    selectedCategorias,
+    selectedClubs,
+    ligaSearch,
+    clubSearch,
+    onToggleLiga: toggleLiga,
+    onToggleCategoria: toggleCategoria,
+    onToggleClub: toggleClub,
+    onLigaSearch: setLigaSearch,
+    onClubSearch: setClubSearch,
+    onClear: clearAll,
+  };
+
   return (
-    <div className={`flex flex-col md:flex-row gap-12 ${padTop ? "pt-36" : "pt-0"} pb-24 px-6 max-w-[1600px] mx-auto`}>
-      <FilterSidebar
-        ligas={ligas}
-        categorias={categorias}
-        clubs={allClubs}
-        selectedLigas={selectedLigas}
-        selectedCategorias={selectedCategorias}
-        selectedClubs={selectedClubs}
-        ligaSearch={ligaSearch}
-        clubSearch={clubSearch}
-        onToggleLiga={toggleLiga}
-        onToggleCategoria={toggleCategoria}
-        onToggleClub={toggleClub}
-        onLigaSearch={setLigaSearch}
-        onClubSearch={setClubSearch}
-        onClear={clearAll}
+    <>
+      {/* Mobile filter drawer */}
+      <FilterDrawer
+        open={filterDrawerOpen}
+        onClose={() => setFilterDrawerOpen(false)}
+        resultCount={filteredProducts.length}
+        {...sharedFilterProps}
       />
 
+    <div className={`flex flex-col md:flex-row gap-12 ${padTop ? "pt-36" : "pt-0"} pb-24 px-6 max-w-[1600px] mx-auto`}>
+
+      {/* Desktop sidebar */}
+      <div className="hidden md:block">
+        <FilterSidebar {...sharedFilterProps} />
+      </div>
+
       <div className="flex-1 min-w-0">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#474747]/20 mb-4">
+
+        {/* Mobile: sticky filter bar */}
+        <div className="md:hidden sticky top-[72px] z-30 bg-[#131313]/95 backdrop-blur-sm -mx-6 px-6 py-3 border-b border-[#474747]/20 mb-4 flex items-center gap-3">
+          <button
+            onClick={() => setFilterDrawerOpen(true)}
+            className="flex items-center gap-2 bg-[#2a2a2a] border border-[#474747]/40 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-[#c6c6c6] hover:text-white transition-colors flex-none"
+          >
+            <FilterIcon />
+            FILTROS
+            {totalActiveFilters > 0 && (
+              <span className="bg-[#34b5fa] text-[#001e2f] text-[9px] font-black px-1.5 py-0.5 min-w-[18px] text-center">
+                {totalActiveFilters}
+              </span>
+            )}
+          </button>
+          <div className="flex-1">
+            <SortDropdown value={sortBy} onChange={(v) => { setSortBy(v); resetPage(); }} />
+          </div>
+        </div>
+
+        {/* Desktop: results bar */}
+        <div className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#474747]/20 mb-4">
           <p className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
             MOSTRANDO {filteredProducts.length} RESULTADO
             {filteredProducts.length !== 1 ? "S" : ""}
@@ -201,6 +242,23 @@ export default function ProductsClient({
         )}
       </div>
     </div>
+    </>
+  );
+}
+
+function FilterIcon() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+    >
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
   );
 }
 
