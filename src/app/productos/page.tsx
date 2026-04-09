@@ -24,7 +24,7 @@ async function getData() {
 }
 
 interface ProductosPageProps {
-  searchParams?: { categoria?: string };
+  searchParams?: { categoria?: string; liga?: string };
 }
 
 export default async function ProductosPage({ searchParams }: ProductosPageProps) {
@@ -32,6 +32,10 @@ export default async function ProductosPage({ searchParams }: ProductosPageProps
 
   const initialCategoriaId = searchParams?.categoria
     ? categorias.find((c) => c.slug === searchParams.categoria || c.id === searchParams.categoria)?.id ?? null
+    : null;
+
+  const initialLigaId = searchParams?.liga
+    ? ligas.find((l) => l.slug === searchParams.liga || l.id === searchParams.liga)?.id ?? null
     : null;
 
   return (
@@ -53,6 +57,7 @@ export default async function ProductosPage({ searchParams }: ProductosPageProps
           ligas={ligas}
           categorias={categorias}
           initialCategoriaId={initialCategoriaId}
+          initialLigaId={initialLigaId}
         />
       </div>
     </PageTransition>

@@ -14,6 +14,7 @@ interface ProductsClientProps {
   ligas: Liga[];
   categorias: Categoria[];
   initialCategoriaId?: string | null;
+  initialLigaId?: string | null;
   padTop?: boolean;
 }
 
@@ -22,9 +23,12 @@ export default function ProductsClient({
   ligas,
   categorias,
   initialCategoriaId,
+  initialLigaId,
   padTop = true,
 }: ProductsClientProps) {
-  const [selectedLigas, setSelectedLigas] = useState<string[]>([]);
+  const [selectedLigas, setSelectedLigas] = useState<string[]>(
+    initialLigaId ? [initialLigaId] : []
+  );
   const [selectedCategorias, setSelectedCategorias] = useState<string[]>(
     initialCategoriaId ? [initialCategoriaId] : []
   );

@@ -4,6 +4,7 @@ import CategoriesGrid from "@/components/home/CategoriesGrid";
 import ProductSlider from "@/components/home/ProductSlider";
 import ProductsClient from "@/components/products/ProductsClient";
 import PageTransition from "@/components/ui/PageTransition";
+import AnimatedHeading from "@/components/ui/AnimatedHeading";
 
 // South American country codes
 const SA_CODES = new Set(["AR", "BR", "UY", "CL", "CO", "PE", "PY", "BO", "EC", "VE"]);
@@ -49,6 +50,7 @@ export default async function HomePage() {
     <PageTransition>
       <HeroSection products={products} />
       <CategoriesGrid products={products} />
+
       <ProductSlider title="RETRO SUDAMÉRICA" products={slider1} />
       <ProductSlider title="RETRO EUROPA" products={slider2} />
 
@@ -58,9 +60,9 @@ export default async function HomePage() {
           <p className="text-[10px] font-black uppercase tracking-widest text-[#34b5fa] mb-2">
             CATÁLOGO COMPLETO
           </p>
-          <h2 className="text-4xl font-black uppercase tracking-tighter text-white">
+          <AnimatedHeading className="text-4xl font-black uppercase tracking-tighter text-white">
             TODOS LOS PRODUCTOS
-          </h2>
+          </AnimatedHeading>
         </div>
         <ProductsClient products={products} ligas={ligas} categorias={categorias} padTop={false} />
       </section>

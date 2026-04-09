@@ -2,107 +2,122 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
+import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/types";
+import CheckoutModal from "./CheckoutModal";
 
 export default function CartSidepanel() {
-  const { items, isOpen, totalItems, formattedTotal, removeItem, updateQty, clear, closeCart } =
+  const { items, isOpen, totalItems, totalPrice, formattedTotal, removeItem, updateQty, clear, closeCart } =
     useCart();
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            key="backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
-            onClick={closeCart}
-          />
+    <>
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+              onClick={closeCart}
+            />
 
-          {/* Panel */}
-          <motion.aside
-            key="panel"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
-            className="fixed top-0 right-0 h-full w-full max-w-[420px] z-[61] bg-[#1b1b1b] flex flex-col"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[#474747]/20">
-              <div>
-                <h2 className="text-sm font-black uppercase tracking-widest text-white">
-                  CARRITO
-                </h2>
-                {totalItems > 0 && (
-                  <p className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6] mt-0.5">
-                    {totalItems} {totalItems === 1 ? "ARTÍCULO" : "ARTÍCULOS"}
-                  </p>
+            {/* Panel */}
+            <motion.aside
+              key="panel"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
+              className="fixed top-0 right-0 h-full w-full max-w-[420px] z-[61] bg-[#1b1b1b] flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-5 border-b border-[#474747]/20">
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-widest text-white">
+                    CARRITO
+                  </h2>
+                  {totalItems > 0 && (
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6] mt-0.5">
+                      {totalItems} {totalItems === 1 ? "ARTÍCULO" : "ARTÍCULOS"}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={closeCart}
+                  className="text-[#c6c6c6] hover:text-white transition-colors p-1"
+                  aria-label="Cerrar carrito"
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+
+              {/* Items */}
+              <div className="flex-1 overflow-y-auto">
+                {items.length === 0 ? (
+                  <EmptyState />
+                ) : (
+                  <ul className="divide-y divide-[#474747]/20">
+                    {items.map((item) => (
+                      <CartItemRow
+                        key={item.variantId}
+                        item={item}
+                        onRemove={() => removeItem(item.variantId)}
+                        onUpdateQty={(qty) => updateQty(item.variantId, qty)}
+                      />
+                    ))}
+                  </ul>
                 )}
               </div>
-              <button
-                onClick={closeCart}
-                className="text-[#c6c6c6] hover:text-white transition-colors p-1"
-                aria-label="Cerrar carrito"
-              >
-                <CloseIcon />
-              </button>
-            </div>
 
-            {/* Items */}
-            <div className="flex-1 overflow-y-auto">
-              {items.length === 0 ? (
-                <EmptyState />
-              ) : (
-                <ul className="divide-y divide-[#474747]/20">
-                  {items.map((item) => (
-                    <CartItemRow
-                      key={item.variantId}
-                      item={item}
-                      onRemove={() => removeItem(item.variantId)}
-                      onUpdateQty={(qty) => updateQty(item.variantId, qty)}
-                    />
-                  ))}
-                </ul>
-              )}
-            </div>
+              {/* Footer */}
+              {items.length > 0 && (
+                <div className="border-t border-[#474747]/20 px-6 py-6 space-y-4 bg-[#1b1b1b]">
+                  {/* Total */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
+                      TOTAL
+                    </span>
+                    <span className="text-2xl font-black text-[#34b5fa] tracking-tighter">
+                      {formattedTotal}
+                    </span>
+                  </div>
 
-            {/* Footer */}
-            {items.length > 0 && (
-              <div className="border-t border-[#474747]/20 px-6 py-6 space-y-4 bg-[#1b1b1b]">
-                {/* Total */}
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
-                    TOTAL
-                  </span>
-                  <span className="text-2xl font-black text-[#34b5fa] tracking-tighter">
-                    {formattedTotal}
-                  </span>
+                  {/* CTA */}
+                  <button
+                    onClick={() => setCheckoutOpen(true)}
+                    className="w-full py-4 bg-white text-[#001e2c] text-sm font-black uppercase tracking-widest hover:bg-[#34b5fa] hover:text-[#001e2f] transition-colors duration-200"
+                  >
+                    FINALIZAR COMPRA
+                  </button>
+
+                  {/* Clear */}
+                  <button
+                    onClick={clear}
+                    className="w-full py-3 text-[10px] font-black uppercase tracking-widest text-[#474747] hover:text-[#c6c6c6] transition-colors duration-200"
+                  >
+                    VACIAR CARRITO
+                  </button>
                 </div>
+              )}
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
-                {/* CTA */}
-                <button className="w-full py-4 bg-white text-[#001e2c] text-sm font-black uppercase tracking-widest hover:bg-[#34b5fa] hover:text-[#001e2f] transition-colors duration-200">
-                  FINALIZAR COMPRA
-                </button>
-
-                {/* Clear */}
-                <button
-                  onClick={clear}
-                  className="w-full py-3 text-[10px] font-black uppercase tracking-widest text-[#474747] hover:text-[#c6c6c6] transition-colors duration-200"
-                >
-                  VACIAR CARRITO
-                </button>
-              </div>
-            )}
-          </motion.aside>
-        </>
-      )}
-    </AnimatePresence>
+      <CheckoutModal
+        open={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+        items={items}
+        totalPrice={totalPrice}
+      />
+    </>
   );
 }
 

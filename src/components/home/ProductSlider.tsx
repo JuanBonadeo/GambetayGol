@@ -21,9 +21,15 @@ export default function ProductSlider({ title, products }: ProductSliderProps) {
       <div className="max-w-[1600px] mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-black uppercase tracking-tighter text-white border-l-4 border-[#34b5fa] pl-4">
+          <motion.h2
+            initial={{ opacity: 0, filter: "blur(8px)" }}
+            whileInView={{ opacity: 1, filter: "blur(0px)" }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="text-2xl font-black uppercase tracking-tighter text-white border-l-4 border-[#34b5fa] pl-4"
+          >
             {title}
-          </h2>
+          </motion.h2>
           <Link
             href="/productos"
             className="text-xs font-black uppercase tracking-widest text-[#34b5fa] hover:text-white transition-colors duration-300"
