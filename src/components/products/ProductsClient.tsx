@@ -156,7 +156,7 @@ export default function ProductsClient({
         {...sharedFilterProps}
       />
 
-    <div className={`flex flex-col md:flex-row gap-12 ${padTop ? "pt-36" : "pt-0"} pb-24 px-6 max-w-[1600px] mx-auto`}>
+    <div className={`flex flex-col md:flex-row gap-12 ${padTop ? "pt-10" : "pt-0"} pb-24 px-6 max-w-[1600px] mx-auto`}>
 
       {/* Desktop sidebar */}
       <div className="hidden md:block">

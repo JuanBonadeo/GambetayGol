@@ -53,7 +53,6 @@ export interface ProductVariant {
   talla: Talla;
   stock: number;
   sku: string;
-  bajoPedido: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -82,7 +81,6 @@ export interface Product {
   categoria: Categoria;
   precio: number;
   destacado: boolean;
-  bajoPedido: boolean;
   activo: boolean;
   clubId: string;
   club: Club;

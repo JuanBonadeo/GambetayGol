@@ -7,14 +7,12 @@ export const ProductSchema = z.object({
   categoriaId: z.string().min(1),
   precio: z.number().min(0),
   destacado: z.boolean().default(false),
-  bajoPedido: z.boolean().default(false),
   activo: z.boolean().default(true),
   clubId: z.string().min(1),
   variants: z.array(z.object({
     talla: z.enum(["XS", "S", "M", "L", "XL", "XXL", "XXXL"]),
     stock: z.number().min(0).default(0),
     sku: z.string().min(1),
-    bajoPedido: z.boolean().default(false),
   })).optional(),
   images: z.array(z.object({
     url: z.string().url(),

@@ -13,7 +13,7 @@ import ImageUploader, { ProductImageEntry } from "@/components/admin/ImageUpload
 interface Liga { id: string; nombre: string; }
 interface Categoria { id: string; nombre: string; }
 interface Club { id: string; nombre: string; ligaId: string; }
-interface ProductVariant { talla: string; stock: number; sku: string; bajoPedido: boolean; }
+interface ProductVariant { talla: string; stock: number; sku: string; }
 interface Offer { activo: boolean; tipo: "PORCENTAJE" | "MONTO_FIJO"; descuento: number; desde: string; hasta: string; deletedAt: string | null; }
 interface Product {
   id: string;
@@ -24,7 +24,6 @@ interface Product {
   categoria: Categoria;
   precio: number;
   destacado: boolean;
-  bajoPedido: boolean;
   activo: boolean;
   clubId: string;
   club: { nombre: string };
@@ -57,7 +56,7 @@ function buildDefaultVariants(existing?: ProductVariant[]): VariantEntry[] {
 
 const emptyForm = {
   nombre: "", slug: "", descripcion: "", categoriaId: "",
-  precio: 0, clubId: "", destacado: false, bajoPedido: false, activo: true,
+  precio: 0, clubId: "", destacado: false, activo: true,
 };
 
 function toSlug(str: string) {
@@ -122,7 +121,7 @@ export default function ProductosPage() {
     setForm({
       nombre: p.nombre, slug: p.slug, descripcion: p.descripcion || "",
       categoriaId: p.categoriaId, precio: p.precio, clubId: p.clubId,
-      destacado: p.destacado, bajoPedido: p.bajoPedido, activo: p.activo,
+      destacado: p.destacado, activo: p.activo,
     });
     setImages(
       (p.images ?? [])
@@ -158,7 +157,6 @@ export default function ProductosPage() {
         talla,
         stock,
         sku: `${slug}-${talla.toLowerCase()}`,
-        bajoPedido: false,
       }));
     const res = await fetch(url, {
       method,
@@ -197,7 +195,7 @@ export default function ProductosPage() {
       body: JSON.stringify({
         nombre: updated.nombre, slug: updated.slug, descripcion: updated.descripcion,
         categoriaId: updated.categoriaId, precio: updated.precio, clubId: updated.clubId,
-        destacado: updated.destacado, bajoPedido: updated.bajoPedido, activo: updated.activo,
+        destacado: updated.destacado, activo: updated.activo,
         images: updated.images.map((i) => ({ url: i.url, orden: i.orden, esPrincipal: i.esPrincipal })),
       }),
     });
@@ -382,7 +380,6 @@ export default function ProductosPage() {
                       {/* Nombre */}
                       <td className="px-4 py-2">
                         <span className="text-white text-xs font-medium">{p.nombre}</span>
-                        {p.bajoPedido && <span className="ml-2"><StatusBadge variant="bajo-pedido" /></span>}
                       </td>
 
                       <td className="px-4 py-2 text-gray-400 text-xs">{p.club?.nombre}</td>
@@ -551,7 +548,6 @@ export default function ProductosPage() {
           <div className="flex flex-col gap-3 p-4 bg-[#0a0a0a] rounded-lg border border-[#1e1e1e]">
             {[
               { key: "destacado" as const, label: "Destacado", desc: "Aparece en secciones destacadas" },
-              { key: "bajoPedido" as const, label: "Bajo pedido", desc: "Se fabrica al momento del pedido" },
               { key: "activo" as const, label: "Activo", desc: "Visible en la tienda" },
             ].map(({ key, label, desc }) => (
               <div key={key} className="flex items-center justify-between">

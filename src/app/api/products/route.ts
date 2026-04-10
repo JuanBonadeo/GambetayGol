@@ -4,13 +4,26 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ProductSchema } from "@/lib/validations/product";
 
+function productPriority(variants: { stock: number }[], destacado: boolean): number {
+  const hasStock = variants.some((v) => v.stock > 0);
+  if (destacado && hasStock) return 0;
+  if (hasStock) return 1;
+  return 2;
+}
+
 export async function GET() {
   try {
     const data = await prisma.product.findMany({
       where: { deletedAt: null },
       include: { club: true, categoria: true, variants: true, images: true, offers: true },
-      orderBy: { createdAt: 'desc' }
     });
+
+    data.sort((a, b) => {
+      const diff = productPriority(a.variants, a.destacado) - productPriority(b.variants, b.destacado);
+      if (diff !== 0) return diff;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
     return NextResponse.json({ data });
   } catch (error) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

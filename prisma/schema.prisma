@@ -125,7 +125,6 @@ model Product {
   categoria    Categoria        @relation(fields: [categoriaId], references: [id])
   precio       Float
   destacado   Boolean          @default(false)
-  bajoPedido  Boolean          @default(false)
   activo      Boolean          @default(true)
   clubId      String
   club        Club             @relation(fields: [clubId], references: [id])
@@ -146,7 +145,6 @@ model ProductVariant {
   talla      Talla
   stock      Int      @default(0)
   sku        String   @unique
-  bajoPedido Boolean  @default(false)
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   offers     Offer[]
   createdAt  DateTime @default(now())

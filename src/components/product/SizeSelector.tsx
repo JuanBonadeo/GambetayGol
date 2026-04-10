@@ -19,7 +19,7 @@ export default function SizeSelector({
     (a, b) => TALLA_ORDER.indexOf(a.talla) - TALLA_ORDER.indexOf(b.talla)
   );
 
-  const isAvailable = (v: ProductVariant) => v.stock > 0 || v.bajoPedido;
+  const isAvailable = (v: ProductVariant) => v.stock > 0;
 
   return (
     <div>
@@ -41,7 +41,6 @@ export default function SizeSelector({
               key={variant.id}
               onClick={() => available && onSelect(variant.id)}
               disabled={!available}
-              title={variant.bajoPedido ? "Bajo pedido" : undefined}
               className={`w-14 h-12 flex items-center justify-center text-xs font-black uppercase tracking-wider transition-all duration-200 ${
                 selected
                   ? "bg-[#34b5fa] text-[#001e2f]"
@@ -51,19 +50,10 @@ export default function SizeSelector({
               }`}
             >
               {variant.talla}
-              {variant.bajoPedido && available && !selected && (
-                <span className="sr-only">(bajo pedido)</span>
-              )}
             </button>
           );
         })}
       </div>
-
-      {sortedVariants.some((v) => v.bajoPedido && isAvailable(v)) && (
-        <p className="text-[10px] text-[#c6c6c6] uppercase tracking-widest mt-2">
-          * Talles marcados disponibles bajo pedido
-        </p>
-      )}
     </div>
   );
 }

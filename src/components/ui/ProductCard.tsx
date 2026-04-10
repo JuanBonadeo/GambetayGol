@@ -13,7 +13,9 @@ interface ProductCardProps {
 export default function ProductCard({ product, priority = false }: ProductCardProps) {
   const { finalPrice, originalPrice, discountPercent } = getDiscountedPrice(product);
   const imageUrl = getPrimaryImage(product);
+  const sinStock = product.variants.length === 0 || product.variants.every((v) => v.stock === 0);
   const isNew =
+    !sinStock &&
     discountPercent === null &&
     new Date(product.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
@@ -82,6 +84,11 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
               </span>
             )}
           </div>
+          {sinStock && (
+            <p className="text-[10px] font-black uppercase tracking-widest text-[#8a8a8a] mt-1.5">
+              Por encargo
+            </p>
+          )}
         </div>
       </Link>
     </motion.div>
