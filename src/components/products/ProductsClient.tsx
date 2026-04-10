@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Product, Liga, Categoria, Club } from "@/types";
+import { Product, Liga, Categoria, Club, Talla } from "@/types";
 import FilterSidebar from "./FilterSidebar";
 import FilterDrawer from "./FilterDrawer";
 import SortDropdown, { SortOption } from "./SortDropdown";
@@ -16,6 +16,7 @@ interface ProductsClientProps {
   categorias: Categoria[];
   initialCategoriaId?: string | null;
   initialLigaId?: string | null;
+  initialEncargo?: boolean;
   padTop?: boolean;
 }
 
@@ -25,6 +26,7 @@ export default function ProductsClient({
   categorias,
   initialCategoriaId,
   initialLigaId,
+  initialEncargo = false,
   padTop = true,
 }: ProductsClientProps) {
   const [selectedLigas, setSelectedLigas] = useState<string[]>(
@@ -34,6 +36,8 @@ export default function ProductsClient({
     initialCategoriaId ? [initialCategoriaId] : []
   );
   const [selectedClubs, setSelectedClubs] = useState<string[]>([]);
+  const [selectedTallas, setSelectedTallas] = useState<Talla[]>([]);
+  const [soloEncargo, setSoloEncargo] = useState(initialEncargo);
   const [sortBy, setSortBy] = useState<SortOption>("recientes");
   const [ligaSearch, setLigaSearch] = useState("");
   const [clubSearch, setClubSearch] = useState("");
@@ -55,6 +59,18 @@ export default function ProductsClient({
 
   const filteredProducts = useMemo(() => {
     let result = products.filter((p) => p.activo);
+
+    if (soloEncargo) {
+      result = result.filter((p) =>
+        p.variants.length === 0 || p.variants.every((v) => v.stock === 0)
+      );
+    }
+
+    if (selectedTallas.length > 0) {
+      result = result.filter((p) =>
+        p.variants.some((v) => selectedTallas.includes(v.talla as Talla))
+      );
+    }
 
     if (selectedLigas.length > 0) {
       result = result.filter((p) => selectedLigas.includes(p.club?.ligaId ?? ""));
@@ -84,7 +100,7 @@ export default function ProductsClient({
     }
 
     return result;
-  }, [products, selectedLigas, selectedCategorias, selectedClubs, sortBy]);
+  }, [products, selectedLigas, selectedCategorias, selectedClubs, selectedTallas, soloEncargo, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
   const paginated = filteredProducts.slice(
@@ -121,13 +137,15 @@ export default function ProductsClient({
     setSelectedLigas([]);
     setSelectedCategorias([]);
     setSelectedClubs([]);
+    setSelectedTallas([]);
+    setSoloEncargo(false);
     setLigaSearch("");
     setClubSearch("");
     resetPage();
   };
 
   const totalActiveFilters =
-    selectedLigas.length + selectedCategorias.length + selectedClubs.length;
+    selectedLigas.length + selectedCategorias.length + selectedClubs.length + selectedTallas.length + (soloEncargo ? 1 : 0);
 
   const sharedFilterProps = {
     ligas,
@@ -136,11 +154,15 @@ export default function ProductsClient({
     selectedLigas,
     selectedCategorias,
     selectedClubs,
+    selectedTallas,
+    soloEncargo,
     ligaSearch,
     clubSearch,
     onToggleLiga: toggleLiga,
     onToggleCategoria: toggleCategoria,
     onToggleClub: toggleClub,
+    onToggleTalla: (t: Talla) => { setSelectedTallas((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]); resetPage(); },
+    onToggleEncargo: () => { setSoloEncargo((v) => !v); resetPage(); },
     onLigaSearch: setLigaSearch,
     onClubSearch: setClubSearch,
     onClear: clearAll,
@@ -197,12 +219,16 @@ export default function ProductsClient({
           selectedLigas={selectedLigas}
           selectedCategorias={selectedCategorias}
           selectedClubs={selectedClubs}
+          selectedTallas={selectedTallas}
+          soloEncargo={soloEncargo}
           ligas={ligas}
           categorias={categorias}
           clubs={allClubs}
           onRemoveLiga={toggleLiga}
           onRemoveCategoria={toggleCategoria}
           onRemoveClub={toggleClub}
+          onRemoveTalla={(t) => { setSelectedTallas((prev) => prev.filter((x) => x !== t)); resetPage(); }}
+          onToggleEncargo={() => { setSoloEncargo(false); resetPage(); }}
         />
 
         <div className="mt-6">

@@ -114,14 +114,11 @@ export function getDiscountedPrice(product: Product): {
   finalPrice: number;
   originalPrice: number;
   discountPercent: number | null;
+  discountLabel: string | null;
 } {
   const offer = getActiveOffer(product);
   if (!offer) {
-    return {
-      finalPrice: product.precio,
-      originalPrice: product.precio,
-      discountPercent: null,
-    };
+    return { finalPrice: product.precio, originalPrice: product.precio, discountPercent: null, discountLabel: null };
   }
   let finalPrice = product.precio;
   if (offer.tipo === "PORCENTAJE") {
@@ -129,11 +126,13 @@ export function getDiscountedPrice(product: Product): {
   } else {
     finalPrice = product.precio - offer.descuento;
   }
-  return {
-    finalPrice: Math.max(0, finalPrice),
-    originalPrice: product.precio,
-    discountPercent: offer.tipo === "PORCENTAJE" ? offer.descuento : null,
-  };
+  const fp = Math.max(0, finalPrice);
+  const discountPercent = offer.tipo === "PORCENTAJE" ? offer.descuento : null;
+  const discountLabel =
+    offer.tipo === "PORCENTAJE"
+      ? `${Math.round(offer.descuento)}% OFF`
+      : `-${formatPrice(offer.descuento)}`;
+  return { finalPrice: fp, originalPrice: product.precio, discountPercent, discountLabel };
 }
 
 export function getPrimaryImage(product: Product): string | null {

@@ -27,7 +27,7 @@ async function getData() {
 }
 
 interface ProductosPageProps {
-  searchParams?: { categoria?: string; liga?: string };
+  searchParams?: { categoria?: string; liga?: string; encargo?: string };
 }
 
 export default async function ProductosPage({ searchParams }: ProductosPageProps) {
@@ -40,6 +40,8 @@ export default async function ProductosPage({ searchParams }: ProductosPageProps
   const initialLigaId = searchParams?.liga
     ? ligas.find((l) => l.slug === searchParams.liga || l.id === searchParams.liga)?.id ?? null
     : null;
+
+  const initialEncargo = searchParams?.encargo === "1";
 
   return (
     <PageTransition>
@@ -61,6 +63,7 @@ export default async function ProductosPage({ searchParams }: ProductosPageProps
           categorias={categorias}
           initialCategoriaId={initialCategoriaId}
           initialLigaId={initialLigaId}
+          initialEncargo={initialEncargo}
         />
       </div>
     </PageTransition>

@@ -14,44 +14,55 @@ interface Props {
   onClose: () => void;
   items: CartItem[];
   totalPrice: number;
+  mode?: "compra" | "encargo";
 }
 
-export default function CheckoutModal({ open, onClose, items, totalPrice }: Props) {
+export default function CheckoutModal({ open, onClose, items, totalPrice, mode = "compra" }: Props) {
   const [nombre, setNombre] = useState("");
   const [esRosario, setEsRosario] = useState<boolean | null>(null);
   const [envioOpcion, setEnvioOpcion] = useState<EnvioOpcion>("sucursal");
 
+  const isEncargo = mode === "encargo";
+
   const costoEnvio =
-    esRosario === false && envioOpcion === "domicilio" ? COSTO_DOMICILIO : 0;
+    !isEncargo && esRosario === false && envioOpcion === "domicilio" ? COSTO_DOMICILIO : 0;
 
   const totalFinal = totalPrice + costoEnvio;
 
   function buildWhatsAppMessage() {
     const lineas: string[] = [];
 
-    lineas.push("*NUEVO PEDIDO - Gambeta y Gol*");
-    lineas.push(`Nombre: ${nombre}`);
-    lineas.push("");
-    lineas.push("*Productos:*");
-
-    items.forEach((item) => {
-      lineas.push(
-        `• ${item.nombre} | Talla: ${item.talla} | Cant: ${item.quantity} | ${formatPrice(item.price * item.quantity)}`
-      );
-    });
-
-    lineas.push("");
-
-    if (esRosario) {
-      lineas.push("Entrega: *Rosario* (envío gratis)");
-    } else if (envioOpcion === "domicilio") {
-      lineas.push(`Entrega: *A domicilio* (${formatPrice(COSTO_DOMICILIO)})`);
+    if (isEncargo) {
+      lineas.push("*ENCARGO - Gambeta y Gol*");
+      lineas.push(`Nombre: ${nombre}`);
+      lineas.push("");
+      lineas.push("*Me gustaría encargar:*");
+      items.forEach((item) => {
+        lineas.push(`• ${item.nombre} | Talla: ${item.talla} | Precio ref.: ${formatPrice(item.price)}`);
+      });
+      lineas.push("");
+      lineas.push("¿Podés confirmarme disponibilidad y tiempo de entrega?");
     } else {
-      lineas.push("Entrega: *Sucursal Andriani* (envío gratis)");
+      lineas.push("*NUEVO PEDIDO - Gambeta y Gol*");
+      lineas.push(`Nombre: ${nombre}`);
+      lineas.push("");
+      lineas.push("*Productos:*");
+      items.forEach((item) => {
+        lineas.push(
+          `• ${item.nombre} | Talla: ${item.talla} | Cant: ${item.quantity} | ${formatPrice(item.price * item.quantity)}`
+        );
+      });
+      lineas.push("");
+      if (esRosario) {
+        lineas.push("Entrega: *Rosario* (envío gratis)");
+      } else if (envioOpcion === "domicilio") {
+        lineas.push(`Entrega: *A domicilio* (${formatPrice(COSTO_DOMICILIO)})`);
+      } else {
+        lineas.push("Entrega: *Sucursal Andriani* (envío gratis)");
+      }
+      lineas.push("");
+      lineas.push(`*Total: ${formatPrice(totalFinal)}*`);
     }
-
-    lineas.push("");
-    lineas.push(`*Total: ${formatPrice(totalFinal)}*`);
 
     return encodeURIComponent(lineas.join("\n"));
   }
@@ -63,8 +74,9 @@ export default function CheckoutModal({ open, onClose, items, totalPrice }: Prop
     onClose();
   }
 
-  const puedeConfirmar =
-    nombre.trim().length > 0 && esRosario !== null;
+  const puedeConfirmar = isEncargo
+    ? nombre.trim().length > 0
+    : nombre.trim().length > 0 && esRosario !== null;
 
   return (
     <AnimatePresence>
@@ -94,9 +106,16 @@ export default function CheckoutModal({ open, onClose, items, totalPrice }: Prop
             <div className="w-full max-w-md bg-[#1b1b1b] border border-[#474747]/30 shadow-2xl">
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-5 border-b border-[#474747]/20">
-                <h2 className="text-sm font-black uppercase tracking-widest text-white">
-                  FINALIZAR COMPRA
-                </h2>
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-widest text-white">
+                    {isEncargo ? "HACER ENCARGO" : "FINALIZAR COMPRA"}
+                  </h2>
+                  {isEncargo && (
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#474747] mt-0.5">
+                      SIN STOCK — TE CONTACTAMOS PARA CONFIRMAR
+                    </p>
+                  )}
+                </div>
                 <button
                   onClick={onClose}
                   className="text-[#c6c6c6] hover:text-white transition-colors p-1"
@@ -122,113 +141,139 @@ export default function CheckoutModal({ open, onClose, items, totalPrice }: Prop
                   />
                 </div>
 
-                {/* ¿Sos de Rosario? */}
-                <div className="space-y-3">
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
-                    ¿SOS DE ROSARIO?
-                  </label>
-                  <div className="flex gap-3">
-                    <RadioBtn
-                      label="Sí"
-                      selected={esRosario === true}
-                      onClick={() => setEsRosario(true)}
-                    />
-                    <RadioBtn
-                      label="No"
-                      selected={esRosario === false}
-                      onClick={() => {
-                        setEsRosario(false);
-                        setEnvioOpcion("sucursal");
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Opciones envío (solo si NO es de Rosario) */}
-                <AnimatePresence>
-                  {esRosario === false && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="space-y-3">
-                        <label className="block text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
-                          TIPO DE ENVÍO
-                        </label>
-                        <div className="space-y-2">
-                          <EnvioBtn
-                            label="SUCURSAL ANDRIANI"
-                            sublabel="GRATIS"
-                            selected={envioOpcion === "sucursal"}
-                            onClick={() => setEnvioOpcion("sucursal")}
-                            free
-                          />
-                          <EnvioBtn
-                            label="A DOMICILIO"
-                            sublabel={formatPrice(COSTO_DOMICILIO)}
-                            selected={envioOpcion === "domicilio"}
-                            onClick={() => setEnvioOpcion("domicilio")}
-                          />
+                {/* Encargo: resumen del producto */}
+                {isEncargo && items.length > 0 && (
+                  <div className="bg-[#2a2a2a] border border-[#474747]/30 px-4 py-3 space-y-1">
+                    {items.map((item) => (
+                      <div key={item.variantId} className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-tight text-white">{item.nombre}</p>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-[#474747]">TALLA: {item.talla}</p>
                         </div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-[#474747]">
-                          EL ENVÍO SE REALIZA POR ANDRIANI
-                        </p>
+                        <span className="text-xs font-black text-[#c6c6c6]">{formatPrice(item.price)}</span>
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Info envío Rosario */}
-                <AnimatePresence>
-                  {esRosario === true && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="bg-[#2a2a2a] border border-[#474747]/30 px-4 py-3">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-[#34b5fa]">
-                          ENVÍO GRATIS DENTRO DE ROSARIO
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Resumen total */}
-                <div className="border-t border-[#474747]/20 pt-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
-                      PRODUCTOS
-                    </span>
-                    <span className="text-sm font-black text-white">
-                      {formatPrice(totalPrice)}
-                    </span>
+                    ))}
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#474747] pt-1">
+                      PRECIO DE REFERENCIA — SUJETO A CONFIRMACIÓN
+                    </p>
                   </div>
-                  {costoEnvio > 0 && (
+                )}
+
+                {/* ¿Sos de Rosario? (solo compra) */}
+                {!isEncargo && (
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
+                      ¿SOS DE ROSARIO?
+                    </label>
+                    <div className="flex gap-3">
+                      <RadioBtn
+                        label="Sí"
+                        selected={esRosario === true}
+                        onClick={() => setEsRosario(true)}
+                      />
+                      <RadioBtn
+                        label="No"
+                        selected={esRosario === false}
+                        onClick={() => {
+                          setEsRosario(false);
+                          setEnvioOpcion("sucursal");
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Opciones envío (solo si NO es de Rosario, solo compra) */}
+                {!isEncargo && (
+                  <AnimatePresence>
+                    {esRosario === false && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="space-y-3">
+                          <label className="block text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
+                            TIPO DE ENVÍO
+                          </label>
+                          <div className="space-y-2">
+                            <EnvioBtn
+                              label="SUCURSAL ANDRIANI"
+                              sublabel="GRATIS"
+                              selected={envioOpcion === "sucursal"}
+                              onClick={() => setEnvioOpcion("sucursal")}
+                              free
+                            />
+                            <EnvioBtn
+                              label="A DOMICILIO"
+                              sublabel={formatPrice(COSTO_DOMICILIO)}
+                              selected={envioOpcion === "domicilio"}
+                              onClick={() => setEnvioOpcion("domicilio")}
+                            />
+                          </div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-[#474747]">
+                            EL ENVÍO SE REALIZA POR ANDRIANI
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                )}
+
+                {/* Info envío Rosario (solo compra) */}
+                {!isEncargo && (
+                  <AnimatePresence>
+                    {esRosario === true && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="bg-[#2a2a2a] border border-[#474747]/30 px-4 py-3">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-[#34b5fa]">
+                            ENVÍO GRATIS DENTRO DE ROSARIO
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                )}
+
+                {/* Resumen total (solo compra) */}
+                {!isEncargo && (
+                  <div className="border-t border-[#474747]/20 pt-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
-                        ENVÍO
+                        PRODUCTOS
                       </span>
                       <span className="text-sm font-black text-white">
-                        {formatPrice(costoEnvio)}
+                        {formatPrice(totalPrice)}
                       </span>
                     </div>
-                  )}
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
-                      TOTAL
-                    </span>
-                    <span className="text-2xl font-black text-[#34b5fa] tracking-tighter">
-                      {formatPrice(totalFinal)}
-                    </span>
+                    {costoEnvio > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
+                          ENVÍO
+                        </span>
+                        <span className="text-sm font-black text-white">
+                          {formatPrice(costoEnvio)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
+                        TOTAL
+                      </span>
+                      <span className="text-2xl font-black text-[#34b5fa] tracking-tighter">
+                        {formatPrice(totalFinal)}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Footer */}
@@ -239,10 +284,12 @@ export default function CheckoutModal({ open, onClose, items, totalPrice }: Prop
                   className="w-full py-4 bg-[#25D366] text-white text-sm font-black uppercase tracking-widest hover:bg-[#1ebe5a] transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   <WhatsAppIcon />
-                  CONFIRMAR PEDIDO POR WHATSAPP
+                  {isEncargo ? "ENCARGAR POR WHATSAPP" : "CONFIRMAR PEDIDO POR WHATSAPP"}
                 </button>
                 <p className="text-[10px] font-black uppercase tracking-widest text-[#474747] text-center mt-3">
-                  SE ABRIRÁ WHATSAPP CON TU PEDIDO LISTO PARA ENVIAR
+                  {isEncargo
+                    ? "TE VAMOS A RESPONDER A LA BREVEDAD"
+                    : "SE ABRIRÁ WHATSAPP CON TU PEDIDO LISTO PARA ENVIAR"}
                 </p>
               </div>
             </div>

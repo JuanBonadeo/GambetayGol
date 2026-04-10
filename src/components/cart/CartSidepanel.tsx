@@ -10,6 +10,10 @@ import CheckoutModal from "./CheckoutModal";
 export default function CartSidepanel() {
   const { items, isOpen, totalItems, totalPrice, formattedTotal, removeItem, updateQty, clear, closeCart } =
     useCart();
+  const totalSavings = items.reduce(
+    (acc, i) => acc + Math.max(0, i.originalPrice - i.price) * i.quantity,
+    0
+  );
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   return (
@@ -88,6 +92,16 @@ export default function CartSidepanel() {
                       {formattedTotal}
                     </span>
                   </div>
+                  {totalSavings > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-green-500">
+                        AHORRO
+                      </span>
+                      <span className="text-sm font-black text-green-500">
+                        -{formatPrice(totalSavings)}
+                      </span>
+                    </div>
+                  )}
 
                   {/* CTA */}
                   <button
@@ -184,6 +198,11 @@ function CartItemRow({
 
           {/* Price + remove */}
           <div className="flex flex-col items-end gap-1">
+            {item.originalPrice > item.price && (
+              <span className="text-[10px] text-[#474747] line-through">
+                {formatPrice(item.originalPrice * item.quantity)}
+              </span>
+            )}
             <span className="text-sm font-black text-[#34b5fa]">
               {formatPrice(item.price * item.quantity)}
             </span>

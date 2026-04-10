@@ -1,35 +1,45 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Categoria, Liga, Club } from "@/types";
+import { Categoria, Liga, Club, Talla } from "@/types";
 
 interface FilterChipsProps {
   selectedLigas: string[];
   selectedCategorias: string[];
   selectedClubs: string[];
+  selectedTallas: Talla[];
+  soloEncargo: boolean;
   ligas: Liga[];
   categorias: Categoria[];
   clubs: Club[];
   onRemoveLiga: (id: string) => void;
   onRemoveCategoria: (id: string) => void;
   onRemoveClub: (id: string) => void;
+  onRemoveTalla: (t: Talla) => void;
+  onToggleEncargo: () => void;
 }
 
 export default function FilterChips({
   selectedLigas,
   selectedCategorias,
   selectedClubs,
+  selectedTallas,
+  soloEncargo,
   ligas,
   categorias,
   clubs,
   onRemoveLiga,
   onRemoveCategoria,
   onRemoveClub,
+  onRemoveTalla,
+  onToggleEncargo,
 }: FilterChipsProps) {
   const hasAny =
     selectedLigas.length > 0 ||
     selectedCategorias.length > 0 ||
-    selectedClubs.length > 0;
+    selectedClubs.length > 0 ||
+    selectedTallas.length > 0 ||
+    soloEncargo;
 
   if (!hasAny) return null;
 
@@ -40,6 +50,21 @@ export default function FilterChips({
   return (
     <div className="flex flex-wrap gap-2 mt-4">
       <AnimatePresence>
+        {selectedTallas.map((talla) => (
+          <motion.button
+            key={`talla-${talla}`}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => onRemoveTalla(talla)}
+            className="flex items-center gap-2 bg-[#34b5fa] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#001e2f] hover:bg-[#7dd3fc] transition-colors duration-200"
+          >
+            {talla}
+            <span>×</span>
+          </motion.button>
+        ))}
+
         {selectedLigas.map((id) => (
           <motion.button
             key={`liga-${id}`}
@@ -84,6 +109,21 @@ export default function FilterChips({
             <span>×</span>
           </motion.button>
         ))}
+
+        {soloEncargo && (
+          <motion.button
+            key="encargo"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={onToggleEncargo}
+            className="flex items-center gap-2 bg-[#34b5fa]/10 border border-[#34b5fa]/30 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#34b5fa] hover:bg-[#34b5fa]/20 transition-colors duration-200"
+          >
+            Por encargo
+            <span>×</span>
+          </motion.button>
+        )}
       </AnimatePresence>
     </div>
   );

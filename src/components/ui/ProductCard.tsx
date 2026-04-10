@@ -11,19 +11,16 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, priority = false }: ProductCardProps) {
-  const { finalPrice, originalPrice, discountPercent } = getDiscountedPrice(product);
+  const { finalPrice, originalPrice, discountLabel } = getDiscountedPrice(product);
+  const hasDiscount = finalPrice < originalPrice;
   const imageUrl = getPrimaryImage(product);
   const sinStock = product.variants.length === 0 || product.variants.every((v) => v.stock === 0);
   const isNew =
     !sinStock &&
-    discountPercent === null &&
+    !hasDiscount &&
     new Date(product.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  const badge = discountPercent
-    ? `${Math.round(discountPercent)}% OFF`
-    : isNew
-    ? "NEW"
-    : null;
+  const badge = hasDiscount ? discountLabel : sinStock ? "ENCARGO" : isNew ? "NEW" : null;
 
   return (
     <motion.div
@@ -53,8 +50,10 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
           {badge && (
             <span
               className={`absolute top-3 left-3 text-[10px] font-black uppercase tracking-widest px-2 py-1 ${
-                discountPercent
+                hasDiscount
                   ? "bg-[#34b5fa] text-[#001e2f]"
+                  : sinStock
+                  ? "bg-[#1b1b1b] text-[#34b5fa] border border-[#34b5fa]/50"
                   : "bg-white text-[#001e2c]"
               }`}
             >
@@ -68,9 +67,6 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
 
         {/* Info */}
         <div className="p-3 text-center">
-          <p className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6] mb-1">
-            {product.club.nombre}
-          </p>
           <p className="text-sm font-black uppercase tracking-tighter text-[#e2e2e2] line-clamp-2 mb-2">
             {product.nombre}
           </p>
@@ -78,17 +74,13 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
             <span className="font-black text-[#34b5fa]">
               {formatPrice(finalPrice)}
             </span>
-            {discountPercent && (
+            {hasDiscount && (
               <span className="text-xs text-[#c6c6c6] line-through">
                 {formatPrice(originalPrice)}
               </span>
             )}
           </div>
-          {sinStock && (
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#8a8a8a] mt-1.5">
-              Por encargo
-            </p>
-          )}
+
         </div>
       </Link>
     </motion.div>

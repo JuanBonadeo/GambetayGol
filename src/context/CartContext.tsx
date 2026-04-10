@@ -15,6 +15,7 @@ export interface CartItem {
   nombre: string;
   talla: string;
   price: number;
+  originalPrice: number;
   image: string | null;
   quantity: number;
 }

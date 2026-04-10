@@ -34,28 +34,17 @@ async function getData(): Promise<{ products: Product[]; ligas: Liga[]; categori
 export default async function HomePage() {
   const { products, ligas, categorias } = await getData();
 
-  const retroProducts = products.filter((p) => p.categoria?.slug === "retro" && p.activo);
+  const productsDestacados = products.filter((p) => p.destacado);
+  const slider1 = productsDestacados.length > 0 ? productsDestacados : products.slice(0, 20);
 
-  const saProducts = retroProducts.filter((p) =>
-    SA_CODES.has(p.club?.liga?.pais?.codigo ?? "")
-  );
-  const euProducts = retroProducts.filter((p) =>
-    EU_CODES.has(p.club?.liga?.pais?.codigo ?? "")
-  );
-
-  // Fallback: if geographic split yields nothing, split retro in half
-  const slider1 =
-    saProducts.length > 0 ? saProducts.slice(0, 10) : retroProducts.slice(0, 8);
-  const slider2 =
-    euProducts.length > 0 ? euProducts.slice(0, 10) : retroProducts.slice(8, 16);
+  
 
   return (
     <PageTransition>
       <HeroSection products={products} />
       <CategoriesGrid products={products} />
 
-      <ProductSlider title="RETRO SUDAMÉRICA" products={slider1} />
-      <ProductSlider title="RETRO EUROPA" products={slider2} />
+      <ProductSlider title="DESTACADOS" products={slider1} />
 
       {/* All products with filters */}
       <section className="bg-[#1b1b1b] py-16 border-t border-[#474747]/10">

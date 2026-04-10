@@ -27,11 +27,8 @@ export default function Footer() {
             </p>
             {/* Social icons */}
             <div className="flex items-center gap-4 mt-2">
-              <SocialLink href="#" label="Instagram">
+              <SocialLink href="https://www.instagram.com/gambetaygol_/" label="Instagram">
                 <InstagramIcon />
-              </SocialLink>
-              <SocialLink href="#" label="Twitter / X">
-                <XIcon />
               </SocialLink>
               <SocialLink href="#" label="Facebook">
                 <FacebookIcon />

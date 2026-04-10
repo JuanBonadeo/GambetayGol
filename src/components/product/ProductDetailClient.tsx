@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Product, getActiveOffer, getDiscountedPrice, formatPrice } from "@/types";
 import ImageGallery from "./ImageGallery";
-import SizeSelector from "./SizeSelector";
+import SizeSelector, { isVirtualId, tallaFromVirtualId } from "./SizeSelector";
 import AddToCartButton from "./AddToCartButton";
+import CheckoutModal from "@/components/cart/CheckoutModal";
 
 interface ProductDetailClientProps {
   product: Product;
@@ -12,18 +13,44 @@ interface ProductDetailClientProps {
 
 export default function ProductDetailClient({ product }: ProductDetailClientProps) {
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const [encargoOpen, setEncargoOpen] = useState(false);
 
   const activeOffer = getActiveOffer(product);
-  const { finalPrice, originalPrice, discountPercent } = getDiscountedPrice(product);
+  const { finalPrice, originalPrice, discountLabel } = getDiscountedPrice(product);
+  const hasDiscount = finalPrice < originalPrice;
 
   const handleSelectSize = (variantId: string) => {
     setSelectedVariantId((prev) => (prev === variantId ? null : variantId));
   };
 
   const selectedVariant = product.variants.find((v) => v.id === selectedVariantId) ?? null;
+  const isVirtual = selectedVariantId ? isVirtualId(selectedVariantId) : false;
+  const selectedTalla = selectedVariant?.talla ?? (isVirtual && selectedVariantId ? tallaFromVirtualId(selectedVariantId) : null);
+  const isEncargo = isVirtual || (selectedVariant ? selectedVariant.stock === 0 : product.variants.every((v) => v.stock === 0));
   const primaryImage = product.images.find((img) => img.esPrincipal)?.url ?? product.images[0]?.url ?? null;
 
+  const encargoItem = selectedVariantId && selectedTalla
+    ? [{
+        productId: product.id,
+        variantId: selectedVariantId,
+        nombre: product.nombre,
+        talla: selectedTalla,
+        price: finalPrice,
+        originalPrice,
+        image: primaryImage,
+        quantity: 1,
+      }]
+    : [];
+
   return (
+    <>
+    <CheckoutModal
+      open={encargoOpen}
+      onClose={() => setEncargoOpen(false)}
+      items={encargoItem}
+      totalPrice={finalPrice}
+      mode="encargo"
+    />
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 pt-36 pb-24 px-6 max-w-[1600px] mx-auto">
       {/* Left: Image gallery */}
       <div>
@@ -56,13 +83,13 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           <span className="text-3xl font-black text-white">
             {formatPrice(finalPrice)}
           </span>
-          {discountPercent && (
+          {hasDiscount && (
             <>
               <span className="text-lg text-[#c6c6c6] line-through">
                 {formatPrice(originalPrice)}
               </span>
               <span className="text-sm font-black text-[#34b5fa] uppercase tracking-wider">
-                {Math.round(discountPercent)}% OFF
+                {discountLabel}
               </span>
             </>
           )}
@@ -80,9 +107,12 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           productId={product.id}
           productName={product.nombre}
           selectedVariantId={selectedVariantId}
-          selectedTalla={selectedVariant?.talla ?? null}
+          selectedTalla={selectedTalla}
           price={finalPrice}
+          originalPrice={originalPrice}
           image={primaryImage}
+          isEncargo={isEncargo}
+          onEncargo={() => setEncargoOpen(true)}
         />
 
         {/* Divider + description */}
@@ -114,6 +144,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         </div>
       </div>
     </div>
+    </>
   );
 }
 

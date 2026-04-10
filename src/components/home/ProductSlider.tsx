@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import ProductCard from "@/components/ui/ProductCard";
@@ -11,8 +11,73 @@ interface ProductSliderProps {
   products: Product[];
 }
 
+const SPEED = 0.6; // px per frame
+
 export default function ProductSlider({ title, products }: ProductSliderProps) {
-  const constraintsRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const isDraggingRef = useRef(false);
+  const pausedRef = useRef(false);
+  const startXRef = useRef(0);
+  const currentOffsetRef = useRef(0);
+  const rafRef = useRef<number>(0);
+  const maxDragRef = useRef(0);
+
+  useEffect(() => {
+    const calc = () => {
+      if (containerRef.current && trackRef.current) {
+        const max = Math.max(0, trackRef.current.scrollWidth - containerRef.current.offsetWidth);
+        maxDragRef.current = max;
+      }
+    };
+    calc();
+    const ro = new ResizeObserver(calc);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [products]);
+
+  // Auto-scroll loop
+  useEffect(() => {
+    const tick = () => {
+      if (!pausedRef.current && !isDraggingRef.current && trackRef.current && maxDragRef.current > 0) {
+        currentOffsetRef.current += SPEED;
+        if (currentOffsetRef.current >= maxDragRef.current) {
+          currentOffsetRef.current = 0;
+        }
+        trackRef.current.style.transform = `translateX(${-currentOffsetRef.current}px)`;
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingRef.current = true;
+    pausedRef.current = true;
+    setIsDragging(true);
+    startXRef.current = e.clientX;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current || !trackRef.current) return;
+    const delta = e.clientX - startXRef.current;
+    const newOffset = Math.max(0, Math.min(maxDragRef.current, currentOffsetRef.current - delta));
+    trackRef.current.style.transform = `translateX(${-newOffset}px)`;
+  };
+
+  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    const delta = e.clientX - startXRef.current;
+    currentOffsetRef.current = Math.max(0, Math.min(maxDragRef.current, currentOffsetRef.current - delta));
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    // resume auto-scroll after a short pause
+    setTimeout(() => { pausedRef.current = false; }, 2000);
+  };
 
   if (products.length === 0) return null;
 
@@ -39,26 +104,29 @@ export default function ProductSlider({ title, products }: ProductSliderProps) {
         </div>
 
         {/* Slider */}
-        <div ref={constraintsRef} className="overflow-hidden">
-          <motion.div
-            drag="x"
-            dragConstraints={constraintsRef}
-            dragElastic={0.1}
-            className="flex gap-3 cursor-grab active:cursor-grabbing select-none"
-            style={{ width: "max-content" }}
+        <div
+          ref={containerRef}
+          className={`overflow-hidden ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerLeave={onPointerUp}
+        >
+          <div
+            ref={trackRef}
+            className="flex gap-3 select-none"
+            style={{ willChange: "transform" }}
           >
             {products.map((product, i) => (
               <div
                 key={product.id}
-                className="flex-none w-[260px] sm:w-[300px] pointer-events-none"
-                style={{ pointerEvents: "none" }}
+                className="flex-none w-[260px] sm:w-[300px]"
+                style={{ pointerEvents: isDragging ? "none" : "all" }}
               >
-                <div style={{ pointerEvents: "all" }}>
-                  <ProductCard product={product} priority={i < 3} />
-                </div>
+                <ProductCard product={product} priority={i < 3} />
               </div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>

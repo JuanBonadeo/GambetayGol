@@ -26,14 +26,37 @@ const emptyForm = {
   descripcion: "", activo: true, desde: "", hasta: "",
 };
 
-function getOfferStatus(o: Offer) {
+function toLocalDatetime(date: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function addDays(base: string, days: number) {
+  const d = base ? new Date(base) : new Date();
+  d.setDate(d.getDate() + days);
+  return toLocalDatetime(d);
+}
+
+function addMonths(base: string, months: number) {
+  const d = base ? new Date(base) : new Date();
+  d.setMonth(d.getMonth() + months);
+  return toLocalDatetime(d);
+}
+
+type OfferStatus = "inactive" | "offer-active" | "offer-expired" | "offer-scheduled";
+
+function computeOfferStatus(activo: boolean, desde: string | Date, hasta: string | Date): OfferStatus {
   const now = new Date();
-  const desde = new Date(o.desde);
-  const hasta = new Date(o.hasta);
-  if (!o.activo) return "inactive" as const;
-  if (hasta < now) return "offer-expired" as const;
-  if (desde > now) return "inactive" as const;
-  return "offer-active" as const;
+  const d = new Date(desde);
+  const h = new Date(hasta);
+  if (!activo) return "inactive";
+  if (h < now) return "offer-expired";
+  if (d > now) return "offer-scheduled";
+  return "offer-active";
+}
+
+function getOfferStatus(o: Offer): OfferStatus {
+  return computeOfferStatus(o.activo, o.desde, o.hasta);
 }
 
 export default function OfertasPage() {
@@ -48,6 +71,7 @@ export default function OfertasPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formLoading, setFormLoading] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -67,6 +91,7 @@ export default function OfertasPage() {
     setEditingId(null);
     setForm(emptyForm);
     setFormError("");
+    setFieldErrors({});
     setDrawerOpen(true);
   };
 
@@ -78,16 +103,39 @@ export default function OfertasPage() {
       descuento: o.descuento,
       descripcion: o.descripcion || "",
       activo: o.activo,
-      desde: o.desde ? new Date(o.desde).toISOString().slice(0, 16) : "",
-      hasta: o.hasta ? new Date(o.hasta).toISOString().slice(0, 16) : "",
+      desde: o.desde ? toLocalDatetime(new Date(o.desde)) : "",
+      hasta: o.hasta ? toLocalDatetime(new Date(o.hasta)) : "",
     });
     setFormError("");
+    setFieldErrors({});
     setDrawerOpen(true);
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    if (!form.desde) errors.desde = "La fecha de inicio es requerida";
+    if (!form.hasta) errors.hasta = "La fecha de fin es requerida";
+    if (form.desde && form.hasta && new Date(form.hasta) <= new Date(form.desde)) {
+      errors.hasta = "La fecha de fin debe ser posterior a la de inicio";
+    }
+    if (!form.descuento || Number(form.descuento) <= 0) {
+      errors.descuento = "El descuento debe ser mayor a 0";
+    }
+    if (form.tipo === "PORCENTAJE" && Number(form.descuento) > 100) {
+      errors.descuento = "El porcentaje no puede superar 100%";
+    }
+    return errors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+    setFieldErrors({});
     setFormLoading(true);
 
     const { productId, ...rest } = form;
@@ -297,15 +345,17 @@ export default function OfertasPage() {
 
           <div>
             <label className={labelCls}>
-              Descuento {form.tipo === "PORCENTAJE" ? "(%)" : "(ARS)"}
+              Descuento {form.tipo === "PORCENTAJE" ? "(%) — máx. 100" : "(ARS)"}
             </label>
             <input
-              required type="number" step="0.01" min="0"
-              className={inputCls}
-              value={form.descuento}
-              onChange={(e) => setForm({ ...form, descuento: Number(e.target.value) })}
+              type="number" step="0.01" min="0"
+              max={form.tipo === "PORCENTAJE" ? 100 : undefined}
+              className={`${inputCls} ${fieldErrors.descuento ? "border-red-500/60" : ""}`}
+              value={form.descuento || ""}
+              onChange={(e) => { setForm({ ...form, descuento: Number(e.target.value) }); setFieldErrors((fe) => ({ ...fe, descuento: "" })); }}
               placeholder="0"
             />
+            {fieldErrors.descuento && <p className="mt-1 text-[10px] text-red-400">{fieldErrors.descuento}</p>}
           </div>
 
           <div>
@@ -319,36 +369,102 @@ export default function OfertasPage() {
             />
           </div>
 
+          {/* Atajos de período rápido */}
+          <div>
+            <label className={labelCls}>Período rápido</label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "Hoy → 1 semana", fn: () => ({ desde: toLocalDatetime(new Date()), hasta: addDays("", 7) }) },
+                { label: "Hoy → 1 mes",   fn: () => ({ desde: toLocalDatetime(new Date()), hasta: addMonths("", 1) }) },
+                { label: "Hoy → 3 meses", fn: () => ({ desde: toLocalDatetime(new Date()), hasta: addMonths("", 3) }) },
+                { label: "Hoy → fin de año", fn: () => {
+                  const fin = new Date(); fin.setMonth(11); fin.setDate(31); fin.setHours(23, 59);
+                  return { desde: toLocalDatetime(new Date()), hasta: toLocalDatetime(fin) };
+                }},
+              ].map(({ label, fn }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => { setForm((f) => ({ ...f, ...fn() })); setFieldErrors((fe) => ({ ...fe, desde: "", hasta: "" })); }}
+                  className="py-1.5 px-2 text-xs text-gray-400 bg-[#0a0a0a] border border-[#1e1e1e] rounded-lg hover:border-[#38bdf8]/50 hover:text-[#38bdf8] transition-colors text-left"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>Desde</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className={labelCls} style={{ marginBottom: 0 }}>Desde</label>
+                <button
+                  type="button"
+                  onClick={() => { setForm((f) => ({ ...f, desde: toLocalDatetime(new Date()) })); setFieldErrors((fe) => ({ ...fe, desde: "" })); }}
+                  className="text-[10px] text-[#38bdf8] hover:text-[#7dd3fc] transition-colors"
+                >
+                  Ahora
+                </button>
+              </div>
               <input
-                required type="datetime-local"
-                className={inputCls}
+                type="datetime-local"
+                className={`${inputCls} ${fieldErrors.desde ? "border-red-500/60" : ""}`}
                 value={form.desde}
-                onChange={(e) => setForm({ ...form, desde: e.target.value })}
+                onChange={(e) => { setForm({ ...form, desde: e.target.value }); setFieldErrors((fe) => ({ ...fe, desde: "" })); }}
               />
+              {fieldErrors.desde && <p className="mt-1 text-[10px] text-red-400">{fieldErrors.desde}</p>}
             </div>
             <div>
-              <label className={labelCls}>Hasta</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className={labelCls} style={{ marginBottom: 0 }}>Hasta</label>
+                <div className="flex gap-1.5">
+                  {[["+ 1 sem", 7], ["+ 1 mes", 30], ["+ 3 m", 90]].map(([lbl, d]) => (
+                    <button
+                      key={lbl}
+                      type="button"
+                      onClick={() => { setForm((f) => ({ ...f, hasta: addDays(f.desde, d as number) })); setFieldErrors((fe) => ({ ...fe, hasta: "" })); }}
+                      className="text-[10px] text-gray-500 hover:text-[#38bdf8] transition-colors"
+                    >
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <input
-                required type="datetime-local"
-                className={inputCls}
+                type="datetime-local"
+                className={`${inputCls} ${fieldErrors.hasta ? "border-red-500/60" : ""}`}
                 value={form.hasta}
-                onChange={(e) => setForm({ ...form, hasta: e.target.value })}
+                onChange={(e) => { setForm({ ...form, hasta: e.target.value }); setFieldErrors((fe) => ({ ...fe, hasta: "" })); }}
               />
+              {fieldErrors.hasta && <p className="mt-1 text-[10px] text-red-400">{fieldErrors.hasta}</p>}
             </div>
           </div>
 
           <div className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-[#1e1e1e]">
             <div>
-              <p className="text-sm text-white font-medium">Activa</p>
-              <p className="text-xs text-gray-500">La oferta se aplica en la tienda</p>
+              <p className="text-sm text-white font-medium">Habilitada</p>
+              <p className="text-xs text-gray-500">
+                {!form.activo
+                  ? "Desactivada manualmente"
+                  : !form.desde || !form.hasta
+                  ? "Se activa según las fechas"
+                  : computeOfferStatus(true, form.desde, form.hasta) === "offer-expired"
+                  ? "Las fechas ya expiraron"
+                  : computeOfferStatus(true, form.desde, form.hasta) === "offer-scheduled"
+                  ? "Se activará cuando llegue la fecha de inicio"
+                  : "Vigente en este momento"}
+              </p>
             </div>
-            <ToggleSwitch
-              checked={form.activo}
-              onChange={(v) => setForm({ ...form, activo: v })}
-            />
+            <div className="flex items-center gap-3">
+              {form.activo && form.desde && form.hasta && (
+                <StatusBadge variant={computeOfferStatus(true, form.desde, form.hasta)} />
+              )}
+              {!form.activo && <StatusBadge variant="inactive" />}
+              <ToggleSwitch
+                checked={form.activo}
+                onChange={(v) => setForm({ ...form, activo: v })}
+              />
+            </div>
           </div>
 
           <div className="flex gap-3 pt-2 border-t border-[#1e1e1e]">

@@ -6,6 +6,9 @@ import { Liga, Categoria, Club } from "@/types";
 
 const CLUBS_DEFAULT_VISIBLE = 5;
 
+const TALLAS = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"] as const;
+type Talla = typeof TALLAS[number];
+
 interface FilterSidebarProps {
   ligas: Liga[];
   categorias: Categoria[];
@@ -13,11 +16,15 @@ interface FilterSidebarProps {
   selectedLigas: string[];
   selectedCategorias: string[];
   selectedClubs: string[];
+  selectedTallas: Talla[];
+  soloEncargo: boolean;
   ligaSearch: string;
   clubSearch: string;
   onToggleLiga: (id: string) => void;
   onToggleCategoria: (id: string) => void;
   onToggleClub: (id: string) => void;
+  onToggleTalla: (t: Talla) => void;
+  onToggleEncargo: () => void;
   onLigaSearch: (q: string) => void;
   onClubSearch: (q: string) => void;
   onClear: () => void;
@@ -30,11 +37,15 @@ export default function FilterSidebar({
   selectedLigas,
   selectedCategorias,
   selectedClubs,
+  selectedTallas,
+  soloEncargo,
   ligaSearch,
   clubSearch,
   onToggleLiga,
   onToggleCategoria,
   onToggleClub,
+  onToggleTalla,
+  onToggleEncargo,
   onLigaSearch,
   onClubSearch,
   onClear,
@@ -46,7 +57,8 @@ export default function FilterSidebar({
   const hasFilters =
     selectedLigas.length > 0 ||
     selectedCategorias.length > 0 ||
-    selectedClubs.length > 0;
+    selectedClubs.length > 0 ||
+    soloEncargo;
 
   const filteredLigas = ligas.filter((l) =>
     l.nombre.toLowerCase().includes(ligaSearch.toLowerCase())
@@ -90,6 +102,101 @@ export default function FilterSidebar({
         )}
       </div>
 
+      {/* Tallas section */}
+      <div className="mb-6">
+        <p className="font-black uppercase text-[10px] tracking-widest text-[#c6c6c6] mb-3">
+          TALLE
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {TALLAS.map((talla) => {
+            const active = selectedTallas.includes(talla);
+            return (
+              <button
+                key={talla}
+                onClick={() => onToggleTalla(talla)}
+                className={`w-14 h-10 flex items-center justify-center text-xs font-black uppercase tracking-wider transition-all duration-200 ${
+                  active
+                    ? "bg-[#34b5fa] text-[#001e2f]"
+                    : "bg-[#2a2a2a] text-[#c6c6c6] hover:bg-[#353535] hover:text-white"
+                }`}
+              >
+                {talla}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Por encargo */}
+      <div className="pb-6 border-t border-[#474747]/20">
+        <button
+          onClick={onToggleEncargo}
+          className="flex items-center gap-3 w-full px-3 py-2 text-[10px] font-black uppercase tracking-wider transition-colors duration-200 text-left bg-[#2a2a2a] hover:bg-[#353535]"
+        >
+          <span
+            className={`w-3 h-3 flex-none border transition-colors ${
+              soloEncargo ? "bg-[#34b5fa] border-[#34b5fa]" : "border-[#919191]"
+            }`}
+          >
+            {soloEncargo && (
+              <svg viewBox="0 0 10 10" fill="none" className="w-full h-full">
+                <polyline points="2,5 4,7.5 8,2.5" stroke="#001e2f" strokeWidth="1.5" strokeLinecap="square" />
+              </svg>
+            )}
+          </span>
+          <span className={soloEncargo ? "text-[#34b5fa]" : "text-[#c6c6c6]"}>
+            Solo por encargo
+          </span>
+        </button>
+      </div>
+      
+      {/* Categoria section */}
+      <div className="mb-6">
+        <button
+          onClick={() => setCatOpen((v) => !v)}
+          className="flex items-center justify-between w-full mb-3"
+        >
+          <span className="font-black uppercase text-[10px] tracking-widest text-[#c6c6c6]">
+            CATEGORÍA
+          </span>
+          <ChevronIcon open={catOpen} />
+        </button>
+
+        <AnimatePresence initial={false}>
+          {catOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              className="overflow-hidden space-y-1"
+            >
+              {categorias.map((cat) => {
+                const active = selectedCategorias.includes(cat.id);
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => onToggleCategoria(cat.id)}
+                    className={`flex items-center gap-3 w-full px-3 py-2 text-[10px] font-black uppercase tracking-wider transition-colors duration-200 text-left ${
+                      active
+                        ? "bg-[#34b5fa] text-[#001e2f]"
+                        : "bg-[#2a2a2a] text-[#c6c6c6] hover:bg-[#353535] hover:text-white"
+                    }`}
+                  >
+                    <span
+                      className={`w-3 h-3 flex-none border ${
+                        active ? "bg-[#001e2f] border-[#001e2f]" : "border-[#919191]"
+                      }`}
+                    />
+                    {cat.nombre.toUpperCase()}
+                  </button>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      
       {/* Liga section */}
       <div className="mb-6">
         <button
@@ -236,52 +343,8 @@ export default function FilterSidebar({
         </AnimatePresence>
       </div>
 
-      {/* Categoria section */}
-      <div className="mb-6">
-        <button
-          onClick={() => setCatOpen((v) => !v)}
-          className="flex items-center justify-between w-full mb-3"
-        >
-          <span className="font-black uppercase text-[10px] tracking-widest text-[#c6c6c6]">
-            CATEGORÍA
-          </span>
-          <ChevronIcon open={catOpen} />
-        </button>
+      
 
-        <AnimatePresence initial={false}>
-          {catOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="overflow-hidden space-y-1"
-            >
-              {categorias.map((cat) => {
-                const active = selectedCategorias.includes(cat.id);
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => onToggleCategoria(cat.id)}
-                    className={`flex items-center gap-3 w-full px-3 py-2 text-[10px] font-black uppercase tracking-wider transition-colors duration-200 text-left ${
-                      active
-                        ? "bg-[#34b5fa] text-[#001e2f]"
-                        : "bg-[#2a2a2a] text-[#c6c6c6] hover:bg-[#353535] hover:text-white"
-                    }`}
-                  >
-                    <span
-                      className={`w-3 h-3 flex-none border ${
-                        active ? "bg-[#001e2f] border-[#001e2f]" : "border-[#919191]"
-                      }`}
-                    />
-                    {cat.nombre.toUpperCase()}
-                  </button>
-                );
-              })}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
     </aside>
   );
 }
