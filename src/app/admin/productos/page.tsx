@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { useToast } from "@/components/admin/Toast";
 import { useConfirmDialog } from "@/components/admin/ConfirmDialog";
 import ImageUploader, { ProductImageEntry } from "@/components/admin/ImageUploader";
+import { ClubCombobox } from "@/components/admin/ClubCombobox";
 
 interface Liga { id: string; nombre: string; }
 interface Categoria { id: string; nombre: string; }
@@ -183,6 +184,11 @@ export default function ProductosPage() {
     setDeletingId(null);
     toast("Producto eliminado", "error");
     loadData();
+  };
+
+  const handleClubCreated = (newClub: Club) => {
+    setClubes((prev) => [...prev, newClub].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+    setForm((f) => ({ ...f, clubId: newClub.id }));
   };
 
   const handleToggle = async (p: Product, field: "destacado" | "activo") => {
@@ -533,15 +539,13 @@ export default function ProductosPage() {
 
           <div>
             <label className={labelCls}>Club</label>
-            <select
-              required
-              className={inputCls}
+            <ClubCombobox
               value={form.clubId}
-              onChange={(e) => setForm({ ...form, clubId: e.target.value })}
-            >
-              <option value="">Seleccionar club...</option>
-              {clubes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-            </select>
+              onChange={(id) => setForm({ ...form, clubId: id })}
+              clubs={clubes}
+              ligas={ligas}
+              onClubCreated={handleClubCreated}
+            />
           </div>
 
           {/* Toggles */}
