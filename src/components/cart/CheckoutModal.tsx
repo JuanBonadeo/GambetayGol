@@ -14,45 +14,44 @@ interface Props {
   onClose: () => void;
   items: CartItem[];
   totalPrice: number;
-  mode?: "compra" | "encargo";
 }
 
-export default function CheckoutModal({ open, onClose, items, totalPrice, mode = "compra" }: Props) {
+export default function CheckoutModal({ open, onClose, items, totalPrice }: Props) {
   const [nombre, setNombre] = useState("");
   const [esRosario, setEsRosario] = useState<boolean | null>(null);
   const [envioOpcion, setEnvioOpcion] = useState<EnvioOpcion>("sucursal");
 
-  const isEncargo = mode === "encargo";
+  const stockItems = items.filter((i) => !i.esEncargo);
+  const encargoItems = items.filter((i) => i.esEncargo);
+  const hasStock = stockItems.length > 0;
+  const hasEncargo = encargoItems.length > 0;
 
   const costoEnvio =
-    !isEncargo && esRosario === false && envioOpcion === "domicilio" ? COSTO_DOMICILIO : 0;
+    hasStock && esRosario === false && envioOpcion === "domicilio" ? COSTO_DOMICILIO : 0;
 
   const totalFinal = totalPrice + costoEnvio;
 
+  function getTipoEnvio(): "ROSARIO" | "ANDREANI_SUCURSAL" | "ANDREANI_DOMICILIO" {
+    if (!hasStock || esRosario) return "ROSARIO";
+    if (envioOpcion === "domicilio") return "ANDREANI_DOMICILIO";
+    return "ANDREANI_SUCURSAL";
+  }
+
   function buildWhatsAppMessage() {
     const lineas: string[] = [];
+    lineas.push("*PEDIDO - Gambeta y Gol*");
+    lineas.push(`Nombre: ${nombre}`);
+    lineas.push("");
 
-    if (isEncargo) {
-      lineas.push("*ENCARGO - Gambeta y Gol*");
-      lineas.push(`Nombre: ${nombre}`);
-      lineas.push("");
-      lineas.push("*Me gustaría encargar:*");
-      items.forEach((item) => {
-        lineas.push(`• ${item.nombre} | Talla: ${item.talla} | Precio ref.: ${formatPrice(item.price)}`);
-      });
-      lineas.push("");
-      lineas.push("¿Podés confirmarme disponibilidad y tiempo de entrega?");
-    } else {
-      lineas.push("*NUEVO PEDIDO - Gambeta y Gol*");
-      lineas.push(`Nombre: ${nombre}`);
-      lineas.push("");
+    if (hasStock) {
       lineas.push("*Productos:*");
-      items.forEach((item) => {
+      stockItems.forEach((item) => {
         lineas.push(
           `• ${item.nombre} | Talla: ${item.talla} | Cant: ${item.quantity} | ${formatPrice(item.price * item.quantity)}`
         );
       });
       lineas.push("");
+
       if (esRosario) {
         lineas.push("Entrega: *Rosario* (envío gratis)");
       } else if (envioOpcion === "domicilio") {
@@ -60,29 +59,64 @@ export default function CheckoutModal({ open, onClose, items, totalPrice, mode =
       } else {
         lineas.push("Entrega: *Sucursal Andriani* (envío gratis)");
       }
-      lineas.push("");
-      lineas.push(`*Total: ${formatPrice(totalFinal)}*`);
+      lineas.push(`*Subtotal productos: ${formatPrice(totalPrice)}*`);
+      if (costoEnvio > 0) lineas.push(`*Envío: ${formatPrice(costoEnvio)}*`);
+      lineas.push(`*TOTAL: ${formatPrice(totalFinal)}*`);
+    }
+
+    if (hasEncargo) {
+      if (hasStock) lineas.push("");
+      lineas.push("*Encargos (sujeto a confirmación):*");
+      encargoItems.forEach((item) => {
+        lineas.push(`• ${item.nombre} | Talla: ${item.talla} | Precio ref.: ${formatPrice(item.price)}`);
+      });
     }
 
     return encodeURIComponent(lineas.join("\n"));
   }
 
-  function handleConfirmar() {
+  async function handleConfirmar() {
+    // Guardar en BD — fire-and-forget
+    fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nombre,
+        tipoEnvio: getTipoEnvio(),
+        items: [
+          ...stockItems
+            .filter((i) => !i.variantId.startsWith("virtual_"))
+            .map((i) => ({
+              esEncargo: false,
+              variantId: i.variantId,
+              precio: i.price,
+              cantidad: i.quantity,
+            })),
+          ...encargoItems.map((i) => ({
+            esEncargo: true as const,
+            productId: i.productId,
+            talla: i.talla,
+            precio: i.price,
+            cantidad: i.quantity,
+          })),
+        ],
+      }),
+    }).catch(() => {});
+
     const numero = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
     const mensaje = buildWhatsAppMessage();
     window.open(`https://wa.me/${numero}?text=${mensaje}`, "_blank");
     onClose();
   }
 
-  const puedeConfirmar = isEncargo
-    ? nombre.trim().length > 0
-    : nombre.trim().length > 0 && esRosario !== null;
+  // Solo pide tipo de envío si hay items con stock real
+  const puedeConfirmar =
+    nombre.trim().length > 0 && (!hasStock || esRosario !== null);
 
   return (
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
           <motion.div
             key="backdrop"
             initial={{ opacity: 0 }}
@@ -93,7 +127,6 @@ export default function CheckoutModal({ open, onClose, items, totalPrice, mode =
             onClick={onClose}
           />
 
-          {/* Modal */}
           <motion.div
             key="modal"
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
@@ -103,30 +136,31 @@ export default function CheckoutModal({ open, onClose, items, totalPrice, mode =
             className="fixed inset-0 z-[71] flex items-center justify-center px-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-full max-w-md bg-[#1b1b1b] border border-[#474747]/30 shadow-2xl">
+            <div className="w-full max-w-md bg-[#1b1b1b] border border-[#474747]/30 shadow-2xl max-h-[90vh] flex flex-col">
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b border-[#474747]/20">
+              <div className="flex items-center justify-between px-6 py-5 border-b border-[#474747]/20 flex-none">
                 <div>
                   <h2 className="text-sm font-black uppercase tracking-widest text-white">
-                    {isEncargo ? "HACER ENCARGO" : "FINALIZAR COMPRA"}
+                    FINALIZAR COMPRA
                   </h2>
-                  {isEncargo && (
+                  {hasEncargo && !hasStock && (
                     <p className="text-[10px] font-black uppercase tracking-widest text-[#474747] mt-0.5">
-                      SIN STOCK — TE CONTACTAMOS PARA CONFIRMAR
+                      ENCARGO — TE CONTACTAMOS PARA CONFIRMAR
+                    </p>
+                  )}
+                  {hasEncargo && hasStock && (
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#34b5fa] mt-0.5">
+                      INCLUYE ENCARGOS
                     </p>
                   )}
                 </div>
-                <button
-                  onClick={onClose}
-                  className="text-[#c6c6c6] hover:text-white transition-colors p-1"
-                  aria-label="Cerrar"
-                >
+                <button onClick={onClose} className="text-[#c6c6c6] hover:text-white transition-colors p-1">
                   <CloseIcon />
                 </button>
               </div>
 
               {/* Body */}
-              <div className="px-6 py-6 space-y-6">
+              <div className="px-6 py-6 space-y-6 overflow-y-auto flex-1">
                 {/* Nombre */}
                 <div className="space-y-2">
                   <label className="block text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
@@ -141,10 +175,71 @@ export default function CheckoutModal({ open, onClose, items, totalPrice, mode =
                   />
                 </div>
 
-                {/* Encargo: resumen del producto */}
-                {isEncargo && items.length > 0 && (
-                  <div className="bg-[#2a2a2a] border border-[#474747]/30 px-4 py-3 space-y-1">
-                    {items.map((item) => (
+                {/* Envío — solo si hay items con stock */}
+                {hasStock && (
+                  <>
+                    <div className="space-y-3">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
+                        ¿SOS DE ROSARIO?
+                      </label>
+                      <div className="flex gap-3">
+                        <RadioBtn label="Sí" selected={esRosario === true} onClick={() => setEsRosario(true)} />
+                        <RadioBtn label="No" selected={esRosario === false} onClick={() => { setEsRosario(false); setEnvioOpcion("sucursal"); }} />
+                      </div>
+                    </div>
+
+                    <AnimatePresence>
+                      {esRosario === false && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="space-y-3">
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
+                              TIPO DE ENVÍO
+                            </label>
+                            <div className="space-y-2">
+                              <EnvioBtn label="SUCURSAL ANDRIANI" sublabel="GRATIS" selected={envioOpcion === "sucursal"} onClick={() => setEnvioOpcion("sucursal")} free />
+                              <EnvioBtn label="A DOMICILIO" sublabel={formatPrice(COSTO_DOMICILIO)} selected={envioOpcion === "domicilio"} onClick={() => setEnvioOpcion("domicilio")} />
+                            </div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[#474747]">
+                              EL ENVÍO SE REALIZA POR ANDRIANI
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <AnimatePresence>
+                      {esRosario === true && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="bg-[#2a2a2a] border border-[#474747]/30 px-4 py-3">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[#34b5fa]">
+                              ENVÍO GRATIS DENTRO DE ROSARIO
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </>
+                )}
+
+                {/* Encargos section */}
+                {hasEncargo && (
+                  <div className="bg-[#2a2a2a] border border-[#34b5fa]/20 px-4 py-3 space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#34b5fa] mb-2">
+                      ENCARGOS — SUJETO A CONFIRMACIÓN
+                    </p>
+                    {encargoItems.map((item) => (
                       <div key={item.variantId} className="flex items-center justify-between">
                         <div>
                           <p className="text-xs font-black uppercase tracking-tight text-white">{item.nombre}</p>
@@ -153,143 +248,42 @@ export default function CheckoutModal({ open, onClose, items, totalPrice, mode =
                         <span className="text-xs font-black text-[#c6c6c6]">{formatPrice(item.price)}</span>
                       </div>
                     ))}
-                    <p className="text-[10px] font-black uppercase tracking-widest text-[#474747] pt-1">
-                      PRECIO DE REFERENCIA — SUJETO A CONFIRMACIÓN
-                    </p>
                   </div>
                 )}
 
-                {/* ¿Sos de Rosario? (solo compra) */}
-                {!isEncargo && (
-                  <div className="space-y-3">
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
-                      ¿SOS DE ROSARIO?
-                    </label>
-                    <div className="flex gap-3">
-                      <RadioBtn
-                        label="Sí"
-                        selected={esRosario === true}
-                        onClick={() => setEsRosario(true)}
-                      />
-                      <RadioBtn
-                        label="No"
-                        selected={esRosario === false}
-                        onClick={() => {
-                          setEsRosario(false);
-                          setEnvioOpcion("sucursal");
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Opciones envío (solo si NO es de Rosario, solo compra) */}
-                {!isEncargo && (
-                  <AnimatePresence>
-                    {esRosario === false && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="space-y-3">
-                          <label className="block text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
-                            TIPO DE ENVÍO
-                          </label>
-                          <div className="space-y-2">
-                            <EnvioBtn
-                              label="SUCURSAL ANDRIANI"
-                              sublabel="GRATIS"
-                              selected={envioOpcion === "sucursal"}
-                              onClick={() => setEnvioOpcion("sucursal")}
-                              free
-                            />
-                            <EnvioBtn
-                              label="A DOMICILIO"
-                              sublabel={formatPrice(COSTO_DOMICILIO)}
-                              selected={envioOpcion === "domicilio"}
-                              onClick={() => setEnvioOpcion("domicilio")}
-                            />
-                          </div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-[#474747]">
-                            EL ENVÍO SE REALIZA POR ANDRIANI
-                          </p>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                )}
-
-                {/* Info envío Rosario (solo compra) */}
-                {!isEncargo && (
-                  <AnimatePresence>
-                    {esRosario === true && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="bg-[#2a2a2a] border border-[#474747]/30 px-4 py-3">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-[#34b5fa]">
-                            ENVÍO GRATIS DENTRO DE ROSARIO
-                          </p>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                )}
-
-                {/* Resumen total (solo compra) */}
-                {!isEncargo && (
+                {/* Resumen total — solo si hay stock */}
+                {hasStock && (
                   <div className="border-t border-[#474747]/20 pt-4 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
-                        PRODUCTOS
-                      </span>
-                      <span className="text-sm font-black text-white">
-                        {formatPrice(totalPrice)}
-                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">PRODUCTOS</span>
+                      <span className="text-sm font-black text-white">{formatPrice(totalPrice)}</span>
                     </div>
                     {costoEnvio > 0 && (
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
-                          ENVÍO
-                        </span>
-                        <span className="text-sm font-black text-white">
-                          {formatPrice(costoEnvio)}
-                        </span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">ENVÍO</span>
+                        <span className="text-sm font-black text-white">{formatPrice(costoEnvio)}</span>
                       </div>
                     )}
                     <div className="flex items-center justify-between pt-1">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">
-                        TOTAL
-                      </span>
-                      <span className="text-2xl font-black text-[#34b5fa] tracking-tighter">
-                        {formatPrice(totalFinal)}
-                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6]">TOTAL</span>
+                      <span className="text-2xl font-black text-[#34b5fa] tracking-tighter">{formatPrice(totalFinal)}</span>
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Footer */}
-              <div className="px-6 pb-6">
+              <div className="px-6 pb-6 flex-none">
                 <button
                   onClick={handleConfirmar}
                   disabled={!puedeConfirmar}
                   className="w-full py-4 bg-[#25D366] text-white text-sm font-black uppercase tracking-widest hover:bg-[#1ebe5a] transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   <WhatsAppIcon />
-                  {isEncargo ? "ENCARGAR POR WHATSAPP" : "CONFIRMAR PEDIDO POR WHATSAPP"}
+                  CONFIRMAR PEDIDO POR WHATSAPP
                 </button>
                 <p className="text-[10px] font-black uppercase tracking-widest text-[#474747] text-center mt-3">
-                  {isEncargo
-                    ? "TE VAMOS A RESPONDER A LA BREVEDAD"
-                    : "SE ABRIRÁ WHATSAPP CON TU PEDIDO LISTO PARA ENVIAR"}
+                  SE ABRIRÁ WHATSAPP CON TU PEDIDO LISTO PARA ENVIAR
                 </p>
               </div>
             </div>
@@ -300,15 +294,7 @@ export default function CheckoutModal({ open, onClose, items, totalPrice, mode =
   );
 }
 
-function RadioBtn({
-  label,
-  selected,
-  onClick,
-}: {
-  label: string;
-  selected: boolean;
-  onClick: () => void;
-}) {
+function RadioBtn({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -323,53 +309,23 @@ function RadioBtn({
   );
 }
 
-function EnvioBtn({
-  label,
-  sublabel,
-  selected,
-  onClick,
-  free,
-}: {
-  label: string;
-  sublabel: string;
-  selected: boolean;
-  onClick: () => void;
-  free?: boolean;
-}) {
+function EnvioBtn({ label, sublabel, selected, onClick, free }: { label: string; sublabel: string; selected: boolean; onClick: () => void; free?: boolean }) {
   return (
     <button
       onClick={onClick}
       className={`w-full flex items-center justify-between px-4 py-3 border transition-colors duration-150 ${
-        selected
-          ? "bg-[#2a2a2a] border-[#34b5fa]/60"
-          : "bg-[#2a2a2a] border-[#474747]/30 hover:border-[#474747]/60"
+        selected ? "bg-[#2a2a2a] border-[#34b5fa]/60" : "bg-[#2a2a2a] border-[#474747]/30 hover:border-[#474747]/60"
       }`}
     >
-      <span className="text-[10px] font-black uppercase tracking-widest text-white">
-        {label}
-      </span>
-      <span
-        className={`text-[10px] font-black uppercase tracking-widest ${
-          free ? "text-[#34b5fa]" : "text-[#c6c6c6]"
-        }`}
-      >
-        {sublabel}
-      </span>
+      <span className="text-[10px] font-black uppercase tracking-widest text-white">{label}</span>
+      <span className={`text-[10px] font-black uppercase tracking-widest ${free ? "text-[#34b5fa]" : "text-[#c6c6c6]"}`}>{sublabel}</span>
     </button>
   );
 }
 
 function CloseIcon() {
   return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="square"
-    >
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
       <line x1="4" y1="4" x2="20" y2="20" />
       <line x1="20" y1="4" x2="4" y2="20" />
     </svg>

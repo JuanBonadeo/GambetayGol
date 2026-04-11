@@ -166,12 +166,24 @@ function CartItemRow({
       {/* Info */}
       <div className="flex-1 flex flex-col justify-between min-w-0">
         <div>
-          <p className="text-xs font-black uppercase tracking-tight text-white leading-snug truncate">
-            {item.nombre}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-black uppercase tracking-tight text-white leading-snug truncate">
+              {item.nombre}
+            </p>
+            {item.esEncargo && (
+              <span className="flex-none text-[9px] font-black uppercase tracking-widest text-[#34b5fa] border border-[#34b5fa]/40 px-1.5 py-0.5 leading-none">
+                ENCARGO
+              </span>
+            )}
+          </div>
           <p className="text-[10px] font-black uppercase tracking-widest text-[#c6c6c6] mt-1">
             TALLA: {item.talla}
           </p>
+          {item.esEncargo && (
+            <p className="text-[9px] font-black uppercase tracking-widest text-[#474747] mt-0.5">
+              SUJETO A CONFIRMACIÓN
+            </p>
+          )}
         </div>
 
         <div className="flex items-center justify-between mt-3">

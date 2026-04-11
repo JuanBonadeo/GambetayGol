@@ -30,10 +30,6 @@ export default function AddToCartButton({
 
   const handleClick = () => {
     if (!selectedVariantId || !selectedTalla) return;
-    if (isEncargo) {
-      onEncargo?.();
-      return;
-    }
     addItem({
       productId,
       variantId: selectedVariantId,
@@ -43,6 +39,7 @@ export default function AddToCartButton({
       originalPrice,
       image,
       quantity: 1,
+      esEncargo: isEncargo,
     });
   };
 

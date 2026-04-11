@@ -18,6 +18,7 @@ export interface CartItem {
   originalPrice: number;
   image: string | null;
   quantity: number;
+  esEncargo: boolean;
 }
 
 interface CartState {

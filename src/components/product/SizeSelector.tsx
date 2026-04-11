@@ -26,14 +26,14 @@ export default function SizeSelector({
   selectedSize,
   onSelect,
 }: SizeSelectorProps) {
-  // Si no hay ninguna variante real, mostramos todas las tallas estándar como encargo
-  const noVariants = variants.length === 0;
-
-  const rows: { id: string; talla: Talla; available: boolean }[] = noVariants
-    ? TALLA_ORDER.map((t) => ({ id: virtualId(t), talla: t, available: false }))
-    : [...variants]
-        .sort((a, b) => TALLA_ORDER.indexOf(a.talla) - TALLA_ORDER.indexOf(b.talla))
-        .map((v) => ({ id: v.id, talla: v.talla, available: v.stock > 0 }));
+  // Siempre mostrar todos los talles estándar.
+  // Si hay variante con stock → disponible. Si hay variante sin stock o no hay variante → encargo.
+  const rows: { id: string; talla: Talla; available: boolean }[] = TALLA_ORDER.map((talla) => {
+    const variant = variants.find((v) => v.talla === talla);
+    return variant
+      ? { id: variant.id, talla, available: variant.stock > 0 }
+      : { id: virtualId(talla), talla, available: false };
+  });
 
   return (
     <div>
@@ -74,6 +74,29 @@ export default function SizeSelector({
           );
         })}
       </div>
+
+      {/* Aviso cuando el talle seleccionado es por encargo */}
+      {selectedSize && rows.find((r) => r.id === selectedSize && !r.available) && (
+        <div className="mt-3 flex items-start gap-2 bg-[#34b5fa]/5 border border-[#34b5fa]/20 px-3 py-2.5">
+          <svg
+            className="flex-none text-[#34b5fa] mt-0.5"
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="square"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#34b5fa] leading-snug">
+            ESTE TALLE ES POR ENCARGO — LO PEDIMOS ESPECIALMENTE PARA VOS. TE CONTACTAMOS PARA CONFIRMAR DISPONIBILIDAD Y PLAZO DE ENTREGA.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
