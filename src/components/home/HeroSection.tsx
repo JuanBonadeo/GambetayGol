@@ -27,6 +27,12 @@ const itemVariants: Variants = {
 };
 
 const slideVariants: Variants = {
+  enter: { opacity: 0 },
+  center: { opacity: 1, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] } },
+  exit: { opacity: 0, transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] } },
+};
+
+const slideVariantsDesktop: Variants = {
   enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 60 : -60 }),
   center: { opacity: 1, x: 0, transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] } },
   exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -60 : 60, transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] } }),
@@ -68,28 +74,28 @@ const BLOBS = [
   },
 ];
 
-function SlideMain() {
+function SlideMain({ isDesktop }: { isDesktop: boolean }) {
   return (
     <motion.div
       key="slide-main"
       custom={1}
-      variants={slideVariants}
+      variants={isDesktop ? slideVariantsDesktop : slideVariants}
       initial="enter"
       animate="center"
       exit="exit"
       className="max-w-3xl"
     >
       <motion.div variants={containerVariants} initial="hidden" animate="visible">
-        <motion.p variants={itemVariants} className="text-[10px] font-black uppercase tracking-widest text-[#34b5fa] mb-6">
+        <motion.p variants={itemVariants} className="text-[10px] font-black uppercase tracking-widest text-[#34b5fa] mb-4 sm:mb-6">
           COLECCIÓN SCALONETA — SELECCIÓN ARGENTINA
         </motion.p>
 
-        <motion.h1 variants={itemVariants} className="text-6xl sm:text-7xl lg:text-9xl font-black uppercase tracking-tighter leading-none mb-6">
+        <motion.h1 variants={itemVariants} className="text-5xl sm:text-7xl lg:text-9xl font-black uppercase tracking-tighter leading-none mb-5 sm:mb-6">
           <ShinyText color="#ffffff" duration={5} className="block">GAMBETA</ShinyText>
           <ShinyText color="#34b5fa" duration={5} className="block">Y GOL</ShinyText>
         </motion.h1>
 
-        <motion.p variants={itemVariants} className="text-xs font-bold uppercase tracking-widest text-[#c6c6c6] max-w-sm mb-10">
+        <motion.p variants={itemVariants} className="text-xs font-bold uppercase tracking-widest text-[#c6c6c6] max-w-sm mb-7 sm:mb-10">
           Las camisetas de los campeones del mundo.
           <br />
           Vestite con la Scaloneta.
@@ -110,28 +116,28 @@ function SlideMain() {
   );
 }
 
-function SlideEncargo() {
+function SlideEncargo({ isDesktop }: { isDesktop: boolean }) {
   return (
     <motion.div
       key="slide-encargo"
       custom={-1}
-      variants={slideVariants}
+      variants={isDesktop ? slideVariantsDesktop : slideVariants}
       initial="enter"
       animate="center"
       exit="exit"
       className="max-w-3xl"
     >
       <motion.div variants={containerVariants} initial="hidden" animate="visible">
-        <motion.p variants={itemVariants} className="text-[10px] font-black uppercase tracking-widest text-[#34b5fa] mb-6">
+        <motion.p variants={itemVariants} className="text-[10px] font-black uppercase tracking-widest text-[#34b5fa] mb-4 sm:mb-6">
           PEDIDOS ESPECIALES
         </motion.p>
 
-        <motion.h1 variants={itemVariants} className="text-6xl sm:text-7xl lg:text-9xl font-black uppercase tracking-tighter leading-none mb-6">
+        <motion.h1 variants={itemVariants} className="text-5xl sm:text-7xl lg:text-9xl font-black uppercase tracking-tighter leading-none mb-5 sm:mb-6">
           <ShinyText color="#ffffff" duration={5} className="block">TRABAJAMOS</ShinyText>
           <ShinyText color="#34b5fa" duration={5} className="block">POR ENCARGO</ShinyText>
         </motion.h1>
 
-        <motion.p variants={itemVariants} className="text-xs font-bold uppercase tracking-widest text-[#c6c6c6] max-w-sm mb-10">
+        <motion.p variants={itemVariants} className="text-xs font-bold uppercase tracking-widest text-[#c6c6c6] max-w-sm mb-7 sm:mb-10">
           Encargá la camiseta que vos querés
           <br />
           y en un mes la tenés en tu casa.
@@ -175,6 +181,15 @@ function WhatsAppIcon() {
 export default function HeroSection({ products: _ }: HeroSectionProps) {
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 640px)");
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const goTo = useCallback((index: number) => {
     setCurrent(index);
@@ -190,16 +205,22 @@ export default function HeroSection({ products: _ }: HeroSectionProps) {
 
   return (
     <section
-      className="relative min-h-[870px] flex items-center overflow-hidden bg-[#131313]"
+      className="relative min-h-[600px] sm:min-h-[870px] flex items-center overflow-hidden bg-[#131313]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* LAYER 1: Grayscale image — Ken Burns slow pan */}
+      {/* LAYER 1: Grayscale image */}
       <div className="absolute inset-0 z-[1] overflow-hidden">
         <motion.div
           className="absolute inset-[-6%]"
-          animate={{ scale: [1, 1.05], x: ["0%", "1.5%"], y: ["0%", "-1%"] }}
-          transition={{ duration: 22, ease: "easeInOut", repeat: Infinity, repeatType: "reverse" }}
+          animate={isDesktop
+            ? { scale: [1, 1.05], x: ["0%", "1.5%"], y: ["0%", "-1%"] }
+            : { scale: [1, 1.04, 1] }
+          }
+          transition={isDesktop
+            ? { duration: 22, ease: "easeInOut", repeat: Infinity, repeatType: "reverse" }
+            : { duration: 18, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }
+          }
         >
           <Image
             src="/banner.jpg"
@@ -211,9 +232,21 @@ export default function HeroSection({ products: _ }: HeroSectionProps) {
         </motion.div>
       </div>
 
-      {/* LAYER 2: Stadium light blobs */}
+      {/* LAYER 2: Blobs — completos en desktop, uno liviano en mobile */}
       <div className="absolute inset-0 z-[2] overflow-hidden pointer-events-none">
-        {BLOBS.map((blob, i) => (
+        {/* Mobile: gradiente celeste estático — sin blur ni blendMode */}
+        {!isDesktop && (
+          <motion.div
+            className="absolute inset-0"
+            style={{
+              background: "radial-gradient(ellipse 80% 60% at 80% 30%, rgba(52,181,250,0.28) 0%, transparent 70%)",
+            }}
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 8, ease: "easeInOut", repeat: Infinity }}
+          />
+        )}
+        {/* Desktop: todos los blobs originales */}
+        {isDesktop && BLOBS.map((blob, i) => (
           <motion.div
             key={i}
             className="absolute rounded-full"
@@ -232,18 +265,19 @@ export default function HeroSection({ products: _ }: HeroSectionProps) {
       </div>
 
       {/* LAYER 3: Gradient overlays */}
-      <div className="absolute inset-0 z-[3] bg-gradient-to-r from-[#131313]/95 via-[#131313]/70 to-transparent" />
+      {/* Mobile: oscurecer todo. Desktop: degradado lateral */}
+      <div className="absolute inset-0 z-[3] bg-[#131313]/70 sm:bg-transparent sm:bg-gradient-to-r sm:from-[#131313]/95 sm:via-[#131313]/70 sm:to-transparent" />
       <div className="absolute inset-0 z-[3] bg-gradient-to-t from-[#131313]/80 via-transparent to-transparent" />
 
       {/* LAYER 10: Slide content */}
-      <div className="relative z-10 px-6 max-w-[1600px] mx-auto w-full pt-28 pb-24">
+      <div className="relative z-10 px-6 max-w-[1600px] mx-auto w-full pt-24 pb-20 sm:pt-28 sm:pb-24">
         <AnimatePresence mode="wait">
-          {current === 0 ? <SlideMain key="main" /> : <SlideEncargo key="encargo" />}
+          {current === 0 ? <SlideMain key="main" isDesktop={isDesktop} /> : <SlideEncargo key="encargo" isDesktop={isDesktop} />}
         </AnimatePresence>
       </div>
 
       {/* Dot navigation */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-3">
+      <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-3">
         {[0, 1].map((i) => (
           <button
             key={i}
