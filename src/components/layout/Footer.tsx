@@ -45,6 +45,8 @@ export default function Footer() {
               {[
                 { href: "/", label: "Inicio" },
                 { href: "/productos", label: "Productos" },
+                { href: "/nosotros", label: "Nosotros" },
+                { href: "/contacto", label: "Contacto" },
               ].map((link) => (
                 <Link
                   key={link.href}
@@ -64,17 +66,17 @@ export default function Footer() {
             </p>
             <div className="flex flex-col gap-3">
               {[
-                "Política de Privacidad",
-                "Términos y Condiciones",
-                "Política de Devoluciones",
-                "Preguntas Frecuentes",
-              ].map((label) => (
+                { href: "#", label: "Política de Privacidad" },
+                { href: "/nosotros", label: "Términos y Condiciones" },
+                { href: "/nosotros", label: "Política de Devoluciones" },
+                { href: "#", label: "Preguntas Frecuentes" },
+              ].map((item) => (
                 <Link
-                  key={label}
-                  href="#"
+                  key={item.label}
+                  href={item.href}
                   className="font-black uppercase text-[11px] tracking-widest text-[#c6c6c6] hover:text-white transition-colors duration-200 w-fit"
                 >
-                  {label}
+                  {item.label}
                 </Link>
               ))}
             </div>
