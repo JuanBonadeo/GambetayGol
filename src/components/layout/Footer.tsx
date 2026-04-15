@@ -14,7 +14,7 @@ export default function Footer() {
           <div className="flex flex-col gap-6">
             <Link href="/" aria-label="Gambeta y Gol — Inicio">
               <Image
-                src="/logo.svg"
+                src="/logo.png"
                 alt="Gambeta y Gol"
                 width={140}
                 height={40}
@@ -30,8 +30,8 @@ export default function Footer() {
               <SocialLink href="https://www.instagram.com/gambetaygol_/" label="Instagram">
                 <InstagramIcon />
               </SocialLink>
-              <SocialLink href="#" label="Facebook">
-                <FacebookIcon />
+              <SocialLink href="https://www.tiktok.com/@gambeta.y.gol?_r=1&_t=ZS-95QNgLau3PO" label="TikTok">
+                <TikTokIcon />
               </SocialLink>
             </div>
           </div>
@@ -148,18 +148,10 @@ function XIcon() {
   );
 }
 
-function FacebookIcon() {
+function TikTokIcon() {
   return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="square"
-    >
-      <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z" />
     </svg>
   );
 }

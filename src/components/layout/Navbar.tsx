@@ -31,7 +31,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between">
           <Link href="/" aria-label="Gambeta y Gol — Inicio">
             <Image
-              src="/logo.svg"
+              src="/logo.png"
               alt="Gambeta y Gol"
               width={140}
               height={40}
