@@ -8,7 +8,6 @@ interface FilterChipsProps {
   selectedCategorias: string[];
   selectedClubs: string[];
   selectedTallas: Talla[];
-  soloEncargo: boolean;
   ligas: Liga[];
   categorias: Categoria[];
   clubs: Club[];
@@ -16,7 +15,6 @@ interface FilterChipsProps {
   onRemoveCategoria: (id: string) => void;
   onRemoveClub: (id: string) => void;
   onRemoveTalla: (t: Talla) => void;
-  onToggleEncargo: () => void;
 }
 
 export default function FilterChips({
@@ -24,7 +22,6 @@ export default function FilterChips({
   selectedCategorias,
   selectedClubs,
   selectedTallas,
-  soloEncargo,
   ligas,
   categorias,
   clubs,
@@ -32,14 +29,12 @@ export default function FilterChips({
   onRemoveCategoria,
   onRemoveClub,
   onRemoveTalla,
-  onToggleEncargo,
 }: FilterChipsProps) {
   const hasAny =
     selectedLigas.length > 0 ||
     selectedCategorias.length > 0 ||
     selectedClubs.length > 0 ||
-    selectedTallas.length > 0 ||
-    soloEncargo;
+    selectedTallas.length > 0;
 
   if (!hasAny) return null;
 
@@ -110,20 +105,6 @@ export default function FilterChips({
           </motion.button>
         ))}
 
-        {soloEncargo && (
-          <motion.button
-            key="encargo"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.8, opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={onToggleEncargo}
-            className="flex items-center gap-2 bg-[#34b5fa]/10 border border-[#34b5fa]/30 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#34b5fa] hover:bg-[#34b5fa]/20 transition-colors duration-200"
-          >
-            Por encargo
-            <span>×</span>
-          </motion.button>
-        )}
       </AnimatePresence>
     </div>
   );

@@ -16,7 +16,6 @@ interface ProductsClientProps {
   categorias: Categoria[];
   initialCategoriaId?: string | null;
   initialLigaId?: string | null;
-  initialEncargo?: boolean;
   padTop?: boolean;
 }
 
@@ -26,7 +25,6 @@ export default function ProductsClient({
   categorias,
   initialCategoriaId,
   initialLigaId,
-  initialEncargo = false,
   padTop = true,
 }: ProductsClientProps) {
   const [selectedLigas, setSelectedLigas] = useState<string[]>(
@@ -37,7 +35,6 @@ export default function ProductsClient({
   );
   const [selectedClubs, setSelectedClubs] = useState<string[]>([]);
   const [selectedTallas, setSelectedTallas] = useState<Talla[]>([]);
-  const [soloEncargo, setSoloEncargo] = useState(initialEncargo);
   const [sortBy, setSortBy] = useState<SortOption>("recientes");
   const [ligaSearch, setLigaSearch] = useState("");
   const [clubSearch, setClubSearch] = useState("");
@@ -59,12 +56,6 @@ export default function ProductsClient({
 
   const filteredProducts = useMemo(() => {
     let result = products.filter((p) => p.activo);
-
-    if (soloEncargo) {
-      result = result.filter((p) =>
-        p.variants.length === 0 || p.variants.every((v) => v.stock === 0)
-      );
-    }
 
     if (selectedTallas.length > 0) {
       result = result.filter((p) =>
@@ -100,7 +91,7 @@ export default function ProductsClient({
     }
 
     return result;
-  }, [products, selectedLigas, selectedCategorias, selectedClubs, selectedTallas, soloEncargo, sortBy]);
+  }, [products, selectedLigas, selectedCategorias, selectedClubs, selectedTallas, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
   const paginated = filteredProducts.slice(
@@ -138,14 +129,13 @@ export default function ProductsClient({
     setSelectedCategorias([]);
     setSelectedClubs([]);
     setSelectedTallas([]);
-    setSoloEncargo(false);
     setLigaSearch("");
     setClubSearch("");
     resetPage();
   };
 
   const totalActiveFilters =
-    selectedLigas.length + selectedCategorias.length + selectedClubs.length + selectedTallas.length + (soloEncargo ? 1 : 0);
+    selectedLigas.length + selectedCategorias.length + selectedClubs.length + selectedTallas.length;
 
   const sharedFilterProps = {
     ligas,
@@ -155,14 +145,12 @@ export default function ProductsClient({
     selectedCategorias,
     selectedClubs,
     selectedTallas,
-    soloEncargo,
     ligaSearch,
     clubSearch,
     onToggleLiga: toggleLiga,
     onToggleCategoria: toggleCategoria,
     onToggleClub: toggleClub,
     onToggleTalla: (t: Talla) => { setSelectedTallas((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]); resetPage(); },
-    onToggleEncargo: () => { setSoloEncargo((v) => !v); resetPage(); },
     onLigaSearch: setLigaSearch,
     onClubSearch: setClubSearch,
     onClear: clearAll,
@@ -220,7 +208,6 @@ export default function ProductsClient({
           selectedCategorias={selectedCategorias}
           selectedClubs={selectedClubs}
           selectedTallas={selectedTallas}
-          soloEncargo={soloEncargo}
           ligas={ligas}
           categorias={categorias}
           clubs={allClubs}
@@ -228,7 +215,6 @@ export default function ProductsClient({
           onRemoveCategoria={toggleCategoria}
           onRemoveClub={toggleClub}
           onRemoveTalla={(t) => { setSelectedTallas((prev) => prev.filter((x) => x !== t)); resetPage(); }}
-          onToggleEncargo={() => { setSoloEncargo(false); resetPage(); }}
         />
 
         <div className="mt-6">

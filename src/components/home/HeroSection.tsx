@@ -157,7 +157,7 @@ function SlideEncargo({ isDesktop }: { isDesktop: boolean }) {
           </Magnet>
           <Magnet strength={0.25}>
             <Link
-              href="/productos?encargo=1"
+              href="/productos"
               className="inline-block bg-transparent border border-white/40 text-white font-black uppercase tracking-widest py-4 px-8 text-sm hover:bg-white hover:text-[#001e2c] transition-colors duration-300"
             >
               VER DISPONIBLES
