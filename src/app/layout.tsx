@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   title: "Gambeta y Gol — Camisetas de Fútbol Retro",
   description:
     "La tienda de camisetas de fútbol retro más exclusiva. Colecciones originales de todo el mundo.",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({
