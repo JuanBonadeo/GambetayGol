@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { ToastProvider } from "@/components/admin/Toast";
 import { ConfirmDialogProvider } from "@/components/admin/ConfirmDialog";
@@ -82,6 +83,7 @@ const navLinks = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleLogout = async () => {
     await authClient.signOut();
@@ -93,33 +95,56 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <ToastProvider>
       <div className="flex min-h-screen bg-[#0a0a0a] text-white font-sans mt-20">
         {/* Sidebar */}
-        <aside className="fixed left-0 top-0 h-screen w-60 border-r border-[#1e1e1e] bg-[#111] flex flex-col z-30">
+        <aside
+          onMouseEnter={() => setIsExpanded(true)}
+          onMouseLeave={() => setIsExpanded(false)}
+          className={`fixed left-0 top-0 h-screen border-r border-[#1e1e1e] bg-[#111] flex flex-col z-30 overflow-hidden transition-[width] duration-300 ease-out ${
+            isExpanded ? "w-60 shadow-2xl shadow-black/60" : "w-16"
+          }`}
+        >
           {/* Logo */}
-          <div className="px-5 py-5 border-b border-[#1e1e1e]">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold tracking-tight text-white">Gambeta y Gol</span>
-              <span className="text-[10px] font-semibold bg-[#38bdf8]/15 text-[#38bdf8] px-1.5 py-0.5 rounded border border-[#38bdf8]/20">
+          <div className="px-5 py-5 border-b border-[#1e1e1e] flex items-center min-h-[57px]">
+            <div className="flex items-center gap-2 whitespace-nowrap">
+              <span
+                className={`text-sm font-bold tracking-tight text-white transition-opacity duration-200 ${
+                  isExpanded ? "opacity-100 delay-150" : "opacity-0"
+                }`}
+              >
+                Gambeta y Gol
+              </span>
+              <span
+                className={`text-[10px] font-semibold bg-[#38bdf8]/15 text-[#38bdf8] px-1.5 py-0.5 rounded border border-[#38bdf8]/20 transition-opacity duration-200 ${
+                  isExpanded ? "opacity-100 delay-200" : "opacity-0"
+                }`}
+              >
                 Admin
               </span>
             </div>
           </div>
 
           {/* Nav */}
-          <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+          <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto overflow-x-hidden">
             {navLinks.map((link) => {
               const isActive = pathname === link.href || pathname.startsWith(link.href + "/");
               return (
                 <Link
                   key={link.name}
                   href={link.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150 ${
+                  title={link.name}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150 whitespace-nowrap ${
                     isActive
                       ? "text-[#38bdf8] bg-[#38bdf8]/8 border-l-2 border-[#38bdf8] pl-[10px]"
                       : "text-gray-400 hover:text-white hover:bg-white/5 border-l-2 border-transparent pl-[10px]"
                   }`}
                 >
-                  <span className={isActive ? "text-[#38bdf8]" : "text-gray-500"}>{link.icon}</span>
-                  {link.name}
+                  <span className={`flex-shrink-0 ${isActive ? "text-[#38bdf8]" : "text-gray-500"}`}>{link.icon}</span>
+                  <span
+                    className={`transition-opacity duration-200 ${
+                      isExpanded ? "opacity-100 delay-150" : "opacity-0"
+                    }`}
+                  >
+                    {link.name}
+                  </span>
                 </Link>
               );
             })}
@@ -129,20 +154,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="p-3 border-t border-[#1e1e1e]">
             <button
               onClick={handleLogout}
-              className="flex w-full items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-500 hover:text-white hover:bg-white/5 transition-colors duration-150 border-l-2 border-transparent pl-[10px]"
+              title="Cerrar sesión"
+              className="flex w-full items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-500 hover:text-white hover:bg-white/5 transition-colors duration-150 border-l-2 border-transparent pl-[10px] whitespace-nowrap"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-              Cerrar sesión
+              <span className="flex-shrink-0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </span>
+              <span
+                className={`transition-opacity duration-200 ${
+                  isExpanded ? "opacity-100 delay-150" : "opacity-0"
+                }`}
+              >
+                Cerrar sesión
+              </span>
             </button>
           </div>
         </aside>
 
         {/* Main */}
-        <main className="ml-60 flex-1 min-h-screen">
+        <main className="ml-16 flex-1 min-h-screen">
           {children}
         </main>
       </div>

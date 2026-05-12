@@ -29,7 +29,7 @@ const SECCIONES = [
   {
     titulo: "CAMBIOS Y DEVOLUCIONES",
     contenido:
-      "En caso de necesitar un cambio, el cliente podrá solicitarlo dentro de los 10 días desde la recepción del producto. Para que el cambio sea válido, el producto deberá encontrarse sin uso y en las mismas condiciones en que fue entregado. Los costos de envío asociados a cambios correrán por cuenta del cliente, excepto en productos defectuosos o errores en el pedido. No se aceptan cambios ni devoluciones de productos personalizados.",
+      "En caso de necesitar un cambio, el cliente podrá solicitarlo dentro de los 10 días desde la recepción del producto. Para que el cambio sea válido, el producto deberá encontrarse sin uso y en las mismas condiciones en que fue entregado. Los costos de envío asociados a cambios correrán por cuenta del cliente, excepto en productos defectuosos o errores en el pedido. No se aceptan cambios ni devoluciones de productos personalizados.\n\nEn situaciones donde el modelo adquirido no se encuentre disponible en stock al momento de realizar el cambio, se ofrecerá una prenda alternativa disponible en el talle solicitado. En caso de que el producto seleccionado tenga un precio mayor, el cliente deberá abonar la diferencia correspondiente.",
   },
   {
     titulo: "RESPONSABILIDAD",
